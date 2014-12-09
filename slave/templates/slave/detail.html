@@ -1,0 +1,17 @@
+<h1>{{ slave.name }}</h1>
+
+{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+
+<ul>
+    <li>Slave was born: {{ slave.date_init }}</li>
+    <li>Is a kid: {{ slave.is_child }}</li>
+    <li>Slave Sex: {{ slave.sex }}</li>
+</ul>
+
+<form action="{% url 'slave:make_happy' slave.id %}" method="post">
+{% csrf_token %}
+    <input type="text" name="happiness" id="happiness" value="{{ slave.happiness }}" />
+    <label>Current {{ slave.happiness }}</label><br />
+<input type="submit" value="Make Happy" />
+</form>
+

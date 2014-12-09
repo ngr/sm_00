@@ -1,0 +1,13 @@
+{% load staticfiles %}
+<link rel="stylesheet" type="text/css" href="{% static 'slave/style.css' %}" />
+
+{% if slaves_list %}
+    <ul>
+    {% for slave in slaves_list %}
+        <li><a href="{% url 'slave:detail' slave.id  %}">{{ slave.name }}</a></li>
+    {% endfor %}
+</ul>
+{% else %}
+    <p>No slaves</p>
+{% endif %}
+
