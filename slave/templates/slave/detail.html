@@ -3,8 +3,10 @@
 {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
 <ul>
-    <li>Slave was born: {{ slave.date_init }}</li>
+    <li>Slave was born: {{ slave.date_birth }}</li>
+    <li>Slave died: {{ slave.date_death }}</li>
     <li>Is a kid: {{ slave.is_child }}</li>
+    <li>Is a adult: {{ slave.is_adult }}</li>
     <li>Slave Sex: {{ slave.sex }}</li>
 </ul>
 

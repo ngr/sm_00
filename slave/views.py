@@ -13,7 +13,7 @@ class IndexView(generic.ListView):
 
     def get_queryset(self):
         return Slave.objects.filter(
-                date_init__lte=timezone.now()
+                date_birth__lte=timezone.now()
                 ).order_by('-id')[:5]
 
 class SlaveView(generic.DetailView):
@@ -21,7 +21,7 @@ class SlaveView(generic.DetailView):
     template_name = 'slave/detail.html'
     def get_queryset(self):
         """ Exclude slaves not yet born """
-        return Slave.objects.filter(date_init__lte=timezone.now())
+        return Slave.objects.filter(date_birth__lte=timezone.now())
 
 def make_happy(request, sid):
     p = get_object_or_404(Slave, pk=sid)

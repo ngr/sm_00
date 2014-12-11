@@ -1,0 +1,3 @@
+__pycache__
+slave/__pycache__/**
+slave/migrations/**
