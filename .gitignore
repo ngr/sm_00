@@ -1,3 +1,4 @@
 __pycache__
 slave/__pycache__/**
+slave/management/commands/__pycache__/**
 slave/migrations/**

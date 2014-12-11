@@ -33,6 +33,21 @@ class SlaveManagerTests(TestCase):
         s = Slave.objects.spawn(**{'name':test_name})
         self.assertEqual(Slave.objects.all().filter(name=test_name)[0].is_alive(), True)
 
+    def test_kill_update_in_db(self):
+        """ Checks if kill() sets the date_death to now() """
+        create_slave()
+        Slave.objects.kill(Slave.objects.latest('date_birth'))
+        victim = Slave.objects.latest('date_birth')
+        self.assertIsNotNone(victim.date_death)
+
+    def test_kill_with_date_specified(self):
+        create_slave()
+        kill_date = timezone.now().replace(microsecond=0) - datetime.timedelta(days=3)
+        print(kill_date)
+        Slave.objects.kill(Slave.objects.latest('date_birth'), kill_date)
+        victim = Slave.objects.latest('date_birth')
+        self.assertEqual(victim.date_death, kill_date)
+
 
 class SlaveMethodTests(TestCase):
     def test_is_child_with_not_yet_born(self):
@@ -72,7 +87,7 @@ class RaceDefaultsTests(TestCase):
                 self.assertIn(param.value, range(1,11))
 
 
-def create_slave(name, age):
+def create_slave(name='Slave', age=1):
     """ Creates a Slave with dayas_delta age """
     birth_time = timezone.now() - datetime.timedelta(days=age)
     return Slave.objects.create(name=name, date_birth=birth_time)

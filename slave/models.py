@@ -61,11 +61,18 @@ class SlaveManager(models.Manager):
     def generate_name(self, sex, race):
         path = FileSystemStorage(location='slave/etc')
         dict_name = 'names_'
-        #sex = choice([0, 1]) if sex is None else sex
-        dict_name += 'male_' if sex == 0 else 'female_'
+        dict_name += 'male_' if sex == 1 else 'female_'
         dict_name += (str(race)+'.txt')
         file_with_names = open('/'.join([path.location, dict_name]), 'r')
         return random_line(file_with_names)
+
+    def kill(self, victim, dd=None):
+        """ Kills the victim. May specify date. """
+        if not dd:
+            dd = timezone.now()
+        print("Killing", victim)
+        Slave.objects.filter(id=victim.id).update(date_death=dd)
+
 
 class RaceDefaults(models.Model):
     race = models.CharField(max_length=15)
