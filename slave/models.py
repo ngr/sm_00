@@ -17,18 +17,23 @@ def random_line(afile):
 
 class SlaveManager(models.Manager):
 
+    APP_ROOT_PATH = '/var/django/sm_00/slave'
+
     def spawn(self, **kwargs):
         larva = self.create(date_birth=timezone.now())
         MIN_ATTR = 1
         MAX_ATTR = 10
         DELTA_ATTR = 2
+        VALID_ATTRIBS = ['intelligence', 'strength', 'agility',\
+                    'charisma', 'name', 'date_birth', 'date_death',\
+                     'race', 'sex', 'happiness', 'satiety']
 
     # Define larva race
         if 'race' in kwargs:
             larva.race = kwargs['race']
         else:
             larva.race = choice([0,1,2])
-        print("Race is set to:", larva.race)
+#        print("Race is set to:", larva.race)
     
     # Define attributes 
     # Default values are overwritten by hard set in kwargs
@@ -39,38 +44,58 @@ class SlaveManager(models.Manager):
                 val = kwargs.pop(param.param)
             else:
                 val = sorted([MIN_ATTR, (param.value + randrange(-DELTA_ATTR, DELTA_ATTR)), MAX_ATTR])[1]
-            print("Optimal val", param.param, "=", val)
+#            print("Optimal val", param.param, "=", val)
             setattr(larva, param.param, val)
     # Now setting rest of hard set in kwargs
         for param, value in kwargs.items():
+            if param not in VALID_ATTRIBS: 
+                continue
             setattr(larva, param, value)
-            print("Hard param:", param, "=", value)
+#            print("Hard defined param:", param, "=", value)
+
     # Setting sex if not yet defined
-        if not larva.sex:
+        if larva.sex is None:
             larva.sex = choice([0, 1])
 
     # Setting name if not yet defined
         if not larva.name:
-            print("Try to choose name")
+ #           print("Try to choose name")
             larva.name = self.generate_name(larva.sex, larva.race)
-        print("Name:", larva.name)
+#        print("Name:", larva.name)
 
         larva.save()
+       
+    # If parents are setin kwargs, make connections
+        if 'parents' in kwargs:
+            parents = kwargs['parents']
+            ps = Parents(larva.id)
+            ps.save()
+            ps.child.add(larva.id)
+            if isinstance(parents, int):
+#                print("One parent specified:", parents)
+                ps.parent.add(parents)
+            elif isinstance(parents, tuple):
+#                print("Multiple parents specified:", parents)
+                if len(parents) > 2:
+                    raise AttributeError("Only 2 parents allowed")
+                for p in parents:
+                    ps.parent.add(p)
+
         return larva
 
     def generate_name(self, sex, race):
-        path = FileSystemStorage(location='slave/etc')
+        path = FileSystemStorage(location='/'.join([__class__.APP_ROOT_PATH, 'etc']))
         dict_name = 'names_'
         dict_name += 'male_' if sex == 1 else 'female_'
         dict_name += (str(race)+'.txt')
         file_with_names = open('/'.join([path.location, dict_name]), 'r')
-        return random_line(file_with_names)
+        return random_line(file_with_names).rstrip()
 
     def kill(self, victim, dd=None):
         """ Kills the victim. May specify date. """
         if not dd:
             dd = timezone.now()
-        print("Killing", victim)
+#        print("Killing", victim)
         Slave.objects.filter(id=victim.id).update(date_death=dd)
 
 
@@ -88,6 +113,7 @@ class Slave(models.Model):
     MALE = True
     FEMALE = False
 
+    GAME_YEAR = 3600
     BLUE = 0
     CYAN = 1
     AQUA = 2
@@ -127,14 +153,23 @@ class Slave(models.Model):
         return self.name
 
     def is_child(self):
-        return timezone.now() - datetime.timedelta(days=10) <= self.date_birth <= timezone.now()
+        return timezone.now() - datetime.timedelta(seconds=(__class__.GAME_YEAR*10))\
+                <= self.date_birth <= timezone.now()
 
     def is_adult(self):
-        return self.date_birth + datetime.timedelta(days=10) <= timezone.now() and not self.date_death
+        return self.date_birth + datetime.timedelta(seconds=(__class__.GAME_YEAR*10))\
+                <= timezone.now() and not self.date_death
 
     def is_alive(self):
         return self.date_birth <= timezone.now() and not self.date_death
 
+    def is_reproductive(self):
+        return self.date_birth + datetime.timedelta(seconds=(__class__.GAME_YEAR*15))\
+                 <= timezone.now() <= self.date_birth + datetime.timedelta(seconds=(__class__.GAME_YEAR*25))\
+                 and not self.date_death
     
-
+class Parents(models.Model):
+    """ This model keeps track of parent relationships. """ 
+    child = models.ManyToManyField(Slave)
+    parent = models.ManyToManyField(Slave, related_name='parent')
 

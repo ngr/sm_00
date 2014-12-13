@@ -7,6 +7,24 @@ from random import random
 from slave.models import Slave, SlaveManager, RaceDefaults
 
 
+class ParentsTests(TestCase):
+    """ These tests follow SlaveManagerTests """
+    def test_is_parent_defined(self):
+        mom = Slave.objects.spawn()
+        son = Slave.objects.spawn(**{'parents':mom.id})
+        self.assertEqual(Slave.objects.filter(parent__child=son)[0].id, mom.id)
+
+    def test_both_parent_defined(self):
+        mom = Slave.objects.spawn()
+        dad = Slave.objects.spawn()
+        son = Slave.objects.spawn(**{'parents':(mom.id, dad.id)})
+        parents_recodred = Slave.objects.filter(parent__child=son)
+        self.assertEqual((parents_recodred[0], parents_recodred[1]), (mom, dad))
+    
+    def test_too_many_parents(self):
+        self.assertRaises(AttributeError, lambda: Slave.objects.spawn(**{'parents':(1,2,3)}))
+
+
 class SlaveManagerTests(TestCase):
     attribs = ['strength', 'intelligence', 'agility', 'charisma']
     
