@@ -114,6 +114,10 @@ class Slave(models.Model):
     FEMALE = False
 
     GAME_YEAR = 3600
+    BABY_AGE = 5
+    CHILD_AGE = 15
+    REPRODUCTIVE_AGE = 25
+    
     BLUE = 0
     CYAN = 1
     AQUA = 2
@@ -152,21 +156,29 @@ class Slave(models.Model):
     def __str__(self):
         return self.name
 
+    def is_baby(self):
+        return timezone.now() - datetime.timedelta(seconds=(__class__.GAME_YEAR * __class__.BABY_AGE))\
+            <= self.date_birth <= timezone.now() and not self.date_death
+
     def is_child(self):
-        return timezone.now() - datetime.timedelta(seconds=(__class__.GAME_YEAR*10))\
-                <= self.date_birth <= timezone.now()
+        return self.date_birth + datetime.timedelta(seconds=(__class__.GAME_YEAR * __class__.BABY_AGE))\
+            <= timezone.now()\
+            <= self.date_birth + datetime.timedelta(seconds=(__class__.GAME_YEAR * __class__.CHILD_AGE))\
+            and not self.date_death
+    
+    def is_reproductive(self):
+        return self.date_birth + datetime.timedelta(seconds=(__class__.GAME_YEAR * __class__.CHILD_AGE))\
+            <= timezone.now()\
+            <= self.date_birth + datetime.timedelta(seconds=(__class__.GAME_YEAR * __class__.REPRODUCTIVE_AGE))\
+            and not self.date_death
 
     def is_adult(self):
-        return self.date_birth + datetime.timedelta(seconds=(__class__.GAME_YEAR*10))\
+        return self.date_birth + datetime.timedelta(seconds=(__class__.GAME_YEAR * __class__.CHILD_AGE))\
                 <= timezone.now() and not self.date_death
 
     def is_alive(self):
         return self.date_birth <= timezone.now() and not self.date_death
 
-    def is_reproductive(self):
-        return self.date_birth + datetime.timedelta(seconds=(__class__.GAME_YEAR*15))\
-                 <= timezone.now() <= self.date_birth + datetime.timedelta(seconds=(__class__.GAME_YEAR*25))\
-                 and not self.date_death
     
 class Parents(models.Model):
     """ This model keeps track of parent relationships. """ 
