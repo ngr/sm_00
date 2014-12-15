@@ -2,6 +2,9 @@ from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 #from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.base import ObjectDoesNotExist
+
+from random import random, randrange
+
 from slave.models import Slave
 from slave.settings import *
 
@@ -59,6 +62,24 @@ class STManager(models.Manager):
 
         return True if SkillTrained.objects.filter(slave=slave, skill=req.get()).get().level\
                 >= SKILL_LEVEL_REQUIREMENT else False
+
+    def get_skill_level(self, slave, skill):
+        """ Returns the current skill level of slave """
+        st = SkillTrained.objects.filter(slave=slave, skill=skill)
+        return st.get().level if st else 0
+    
+    def use_skill(self, slave, skill, bonus=0):
+        """ Returns boolean result of using skill. Bonus in range -1:1 can modify result """
+        skl = self.get_skill_level(slave, skill)
+        if not (-1.0 <= bonus <= 1.0):
+            raise AttributeError("Bonus invalid.")
+
+        skl = 0.99 if (skl/100.0 + bonus) >= 1 else skl/100.0 + bonus
+        skl = 0 if skl < 0 else skl
+        print("Skill level with bonus:", skl)
+
+        return random() < skl
+
 
 
 class SkillTrained(models.Model):
