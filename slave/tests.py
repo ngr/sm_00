@@ -5,7 +5,7 @@ import datetime
 from random import random
 
 from slave.models import Slave, SlaveManager, RaceDefaults
-from skill.models import Skill
+from skill.models import Skill, SkillTrained
 
 from slave.settings import *
 
@@ -75,6 +75,45 @@ class SlaveMethodTests(TestCase):
     BABY_AGE = 5
     CHILD_AGE = 15
     REPRODUCTIVE_AGE = 25
+
+    """ Tests for get_skills().
+        As far as direct access to Skill class is not recommended
+        this should be done via Slave objects """
+
+    def test_get_skills_with_one_st(self):
+        """ Request one with one trained """
+        sl = create_slave()
+        sk1 = create_skill()
+        SkillTrained.objects.set_st(sl, sk1, 50)
+        self.assertEqual(sl.get_skills(sk1)[sk1], 50)
+
+    def test_get_skills_with_zero_st(self):
+        """ Request one with none trained """
+        sl = create_slave()
+        sk1 = create_skill()
+        self.assertEqual(sl.get_skills(sk1)[sk1], 0)
+
+    def test_get_skills_with_many_st(self):
+        """ Request for skill with no args with multiple trained """
+        sl = create_slave()
+        sk1 = create_skill()
+        sk2 = create_skill(name='sk2 skill')
+        SkillTrained.objects.set_st(sl, sk1, 50)
+        SkillTrained.objects.set_st(sl, sk2, 30)
+        self.assertEqual(sl.get_skills()[sk2], 30)
+
+
+    def test_get_skills_one_from_many_st(self):
+        """ Request for skills with multiple args with multiple trained """
+        sl = create_slave()
+        sk1 = create_skill()
+        sk2 = create_skill(name='sk2 skill')
+        SkillTrained.objects.set_st(sl, sk1, 50)
+        SkillTrained.objects.set_st(sl, sk2, 30)
+        
+        self.assertEqual(sl.get_skills(*[sk1, sk2])[sk1], 50)
+
+
 
     """ Tests for age zone methods """
 ##############
@@ -227,10 +266,36 @@ class RaceDefaultsTests(TestCase):
                 self.assertIn(param.value, range(1,11))
 
 
+def push_base_skill():
+    cursor = connection.cursor()
+    cursor.execute("""INSERT INTO  `dj_sm_00`.`skill_skill`
+     ( `id` , `name` , `primary_attribute` , `difficulty` )
+    VALUES ( NULL ,  'Learning1',  '0',  '1' );""")
+    print("Executed raw SQL to create learning skill")
+    return
+
+def get_current_db_skills():
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM `dj_sm_00`.`skill_skill` WHERE 1;")
+    for row in cursor.fetchone():
+        print("Row:", row)
+    return row
+
+
+def create_skill(name='Test skill', pr_attr=0, difficulty=1):
+    """ Creates a skill """
+    s = Skill(name=name, primary_attribute=pr_attr, difficulty=difficulty)
+    s.save()
+    return s
+
+
 def create_slave(name='Slave', age=1):
     """ Creates a Slave with dayas_delta age """
-    birth_time = timezone.now() - datetime.timedelta(days=age)
-    return Slave.objects.create(name=name, date_birth=birth_time)
+    birth_time = timezone.now() - datetime.timedelta(seconds=(GAME_YEAR * age))
+    sl = Slave.objects.spawn(name=name, date_birth=birth_time)
+#    sl = Slave.objects.spawn()
+#    print("create_slave() created slave", sl)
+    return sl
 
 class SlaveViewTests(TestCase):
     def test_index_view_with_no_questions(self):
