@@ -30,14 +30,14 @@ class STManager(models.Manager):
         st = SkillTrained.objects.filter(slave=slave, skill=skill)
         if st:
             print("ST record exists. Should try to update.", st)
-            if self.skill_available(slave, skill):
+            if self.__skill_available(slave, skill):
                 print("Skill available. Updating to level:", level)
                 st.update(level=level)
             else:
                 print("Skill is not available.")
         else:
             print("No ST record. Creating new one...", st)
-            if self.skill_available(slave, skill):
+            if self.__skill_available(slave, skill):
                 print("skill_available() returned True")
                 st = SkillTrained(slave=slave, skill=skill, level=level)
                 st.save()
@@ -49,19 +49,6 @@ class STManager(models.Manager):
         st = SkillTrained.objects.filter(slave=slave, skill=skill)
         self.set_st(slave, skill, st[0].level + 1)
 
-
-    def skill_available(self, slave, skill):
-        """ This helper checks if given skill should be available to the slave """
-    # The following exception is required for base skills with no parents
-        req = skill.required_skills
-        if req:
-            return True # This happens with "base" skills.
-        
-        print("Slave has required skill at level:",\
-                SkillTrained.objects.filter(slave=slave, skill=req.get()).get().level)
-
-        return True if SkillTrained.objects.filter(slave=slave, skill=req.get()).get().level\
-                >= SKILL_LEVEL_REQUIREMENT else False
 
     def get_skill_level(self, slave, skill):
         """ Returns the current skill level of slave """
@@ -79,6 +66,19 @@ class STManager(models.Manager):
         print("Skill level with bonus:", skl)
 
         return random() < skl
+
+    def __skill_available(self, slave, skill):
+        """ This helper checks if given skill should be available to the slave """
+    # The following exception is required for base skills with no parents
+        req = skill.required_skills
+        if req:
+            return True # This happens with "base" skills.
+
+        print("Slave has required skill at level:",\
+                SkillTrained.objects.filter(slave=slave, skill=req.get()).get().level)
+
+        return True if SkillTrained.objects.filter(slave=slave, skill=req.get()).get().level\
+                >= SKILL_LEVEL_REQUIREMENT else False
 
 
 

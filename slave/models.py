@@ -4,6 +4,9 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.core.files.storage import FileSystemStorage
+from slave.settings import *
+
+#from skill.models import Skill
 
 """ HERE ARE SOME HELPERS """
 def random_line(afile):
@@ -60,7 +63,7 @@ class SlaveManager(models.Manager):
     # Setting name if not yet defined
         if not larva.name:
  #           print("Try to choose name")
-            larva.name = self.generate_name(larva.sex, larva.race)
+            larva.name = self.__generate_name(larva.sex, larva.race)
 #        print("Name:", larva.name)
 
         larva.save()
@@ -83,7 +86,24 @@ class SlaveManager(models.Manager):
 
         return larva
 
-    def generate_name(self, sex, race):
+    def kill(self, victim, dd=None):
+        """ Kills the victim. May specify date. """
+        if not dd:
+            dd = timezone.now()
+#        print("Killing", victim, victim.id)
+
+# Filter() is commented as it seems to be less productive than get->set->save
+#       Slave.objects.filter(pk=victim.id).update(date_death=dd)
+        try:
+            sl = Slave.objects.get(pk=victim.id)
+            sl.date_death = dd
+            sl.save()
+        except Model.DoesNotExist:
+            print("Killing failed")
+            return False
+
+    def __generate_name(self, sex, race):
+        """ Helper to take some random slave name """
         path = FileSystemStorage(location='/'.join([__class__.APP_ROOT_PATH, 'etc']))
         dict_name = 'names_'
         dict_name += 'male_' if sex == 1 else 'female_'
@@ -91,46 +111,30 @@ class SlaveManager(models.Manager):
         file_with_names = open('/'.join([path.location, dict_name]), 'r')
         return random_line(file_with_names).rstrip()
 
-    def kill(self, victim, dd=None):
-        """ Kills the victim. May specify date. """
-        if not dd:
-            dd = timezone.now()
-#        print("Killing", victim)
-        Slave.objects.filter(id=victim.id).update(date_death=dd)
-
-
-class RaceDefaults(models.Model):
-    race = models.CharField(max_length=15)
-    param = models.CharField(max_length=127)
-    value = models.SmallIntegerField(default=0,\
-            validators=[MinValueValidator(-100), MaxValueValidator(100)])
-
-    def __str__(self):
-        return ' '.join([self.race, self.param])
 
 class Slave(models.Model):
 
-    MALE = True
-    FEMALE = False
+#    MALE = True
+#    FEMALE = False
 
-    GAME_YEAR = 3600
-    BABY_AGE = 5
-    CHILD_AGE = 15
-    REPRODUCTIVE_AGE = 25
+#    GAME_YEAR = 3600
+#    BABY_AGE = 5
+#    CHILD_AGE = 15
+#    REPRODUCTIVE_AGE = 25
     
-    BLUE = 0
-    CYAN = 1
-    AQUA = 2
+#    BLUE = 0
+#    CYAN = 1
+#    AQUA = 2
 
-    SEX_CHOICES = (
-            (MALE, 'Male'),
-            (FEMALE, 'Female'),
-            )
-    RACE_CHOICES = (
-            (BLUE, 'Blue'),
-            (CYAN, 'Cyan'),
-            (AQUA, 'Aqua'),
-            )
+#    SEX_CHOICES = (
+#            (MALE, 'Male'),
+#            (FEMALE, 'Female'),
+#            )
+#    RACE_CHOICES = (
+#            (BLUE, 'Blue'),
+#            (CYAN, 'Cyan'),
+#            (AQUA, 'Aqua'),
+#            )
     name = models.CharField(max_length=127)
     date_birth = models.DateTimeField('Date of birth')
     date_death = models.DateTimeField('Date of death', null=True)
@@ -157,27 +161,67 @@ class Slave(models.Model):
         return self.name
 
     def is_baby(self):
-        return timezone.now() - datetime.timedelta(seconds=(__class__.GAME_YEAR * __class__.BABY_AGE))\
+        return timezone.now() - datetime.timedelta(seconds=(GAME_YEAR * BABY_AGE))\
             <= self.date_birth <= timezone.now() and not self.date_death
 
     def is_child(self):
-        return self.date_birth + datetime.timedelta(seconds=(__class__.GAME_YEAR * __class__.BABY_AGE))\
+        return self.date_birth + datetime.timedelta(seconds=(GAME_YEAR * BABY_AGE))\
             <= timezone.now()\
-            <= self.date_birth + datetime.timedelta(seconds=(__class__.GAME_YEAR * __class__.CHILD_AGE))\
+            <= self.date_birth + datetime.timedelta(seconds=(GAME_YEAR * CHILD_AGE))\
             and not self.date_death
     
     def is_reproductive(self):
-        return self.date_birth + datetime.timedelta(seconds=(__class__.GAME_YEAR * __class__.CHILD_AGE))\
+        return self.date_birth + datetime.timedelta(seconds=(GAME_YEAR * CHILD_AGE))\
             <= timezone.now()\
-            <= self.date_birth + datetime.timedelta(seconds=(__class__.GAME_YEAR * __class__.REPRODUCTIVE_AGE))\
+            <= self.date_birth + datetime.timedelta(seconds=(GAME_YEAR * REPRODUCTIVE_AGE))\
             and not self.date_death
 
     def is_adult(self):
-        return self.date_birth + datetime.timedelta(seconds=(__class__.GAME_YEAR * __class__.CHILD_AGE))\
+        return self.date_birth + datetime.timedelta(seconds=(GAME_YEAR * CHILD_AGE))\
                 <= timezone.now() and not self.date_death
 
     def is_alive(self):
         return self.date_birth <= timezone.now() and not self.date_death
+
+    def get_skills(self, *args):
+        """ Returns the current skill level on requested skills.
+            If skill is not trained return 0 value.
+            If args not set return all skills. """
+        result = {}
+
+        if not args:
+            """ Returning all trained skills.
+            Should one day take all skills and return zeros if not trained
+            same as we do it if request exists. """
+            sk_all = self.skilltrained_set.all()
+            if sk_all.exists():
+                for s in sk_all:
+                    result[s.skill] = s.level
+            return result
+
+        for sk in args:
+#            print("Requested slave skill:", self, sk)
+#            print(self.skilltrained_set.all())
+            
+            if self.skilltrained_set.filter(skill=sk).exists():
+                # We know that skilltrained is unique so use get()
+                result[sk] = self.skilltrained_set.get(skill=sk).level
+            else:
+                result[sk] = 0
+        return result
+
+
+#################################
+#################################
+class RaceDefaults(models.Model):
+    race = models.CharField(max_length=15)
+    param = models.CharField(max_length=127)
+    value = models.SmallIntegerField(default=0,\
+            validators=[MinValueValidator(-100), MaxValueValidator(100)])
+
+    def __str__(self):
+        return ' '.join([self.race, self.param])
+
 
     
 class Parents(models.Model):

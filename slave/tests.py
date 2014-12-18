@@ -5,7 +5,9 @@ import datetime
 from random import random
 
 from slave.models import Slave, SlaveManager, RaceDefaults
+from skill.models import Skill
 
+from slave.settings import *
 
 class ParentsTests(TestCase):
     """ These tests follow SlaveManagerTests """
