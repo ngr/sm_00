@@ -1,12 +1,14 @@
 from django.db import models
+from django.db.models import Q
 from django.core.validators import MaxValueValidator, MinValueValidator
 #from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.base import ObjectDoesNotExist
 
 from random import random, randrange
 
-from slave.models import Slave
+#from slave.models import Slave
 from slave.settings import *
+from slave.helpers import *
 
 class Skill(models.Model):
     """ This is the main list of skills """
@@ -21,39 +23,49 @@ class Skill(models.Model):
 
 class STManager(models.Manager):
     """" ST - stands for Skill Trained. This is a custom model manager. """
-    def set_st(self, slave, skill, level=0):
-        """ This method assignes the 'skill' to 'slave' at 'level'
+    def set_st(self, slave, skill, exp=0):
+        """ This method assignes the 'skill' to 'slave' with 'exp'
             There are certain checks performed here. If you change test well! """
 
-        print("Setting to slave skill at level:", slave, skill, level)
+        print("Setting to slave skill with exp:", slave, skill, exp)
+
+        exp = fit_to_range_int(exp, 0)
+        print("Fitted exp:", exp)
+#        level, level1 = level1, level
 
         st = SkillTrained.objects.filter(slave=slave, skill=skill)
         if st:
             print("ST record exists. Should try to update.", st)
             if self.__skill_available(slave, skill):
-                print("Skill available. Updating to level:", level)
-                st.update(level=level)
+                print("Skill available. Updating exp:", exp)
+                st.update(exp=exp)
             else:
                 print("Skill is not available.")
         else:
             print("No ST record. Creating new one...", st)
             if self.__skill_available(slave, skill):
                 print("skill_available() returned True")
-                st = SkillTrained(slave=slave, skill=skill, level=level)
+                st = SkillTrained(slave=slave, skill=skill, exp=exp)
                 st.save()
             else:
                 print("Skill is not available")
 
-    def inc_st(self, slave, skill):
-        """ This is a shortcut to increase skill by 1 """
+    def add_exp(self, slave, skill, exp=1):
+        """ This is a shortcut to increase skill experience """
         st = SkillTrained.objects.filter(slave=slave, skill=skill)
-        self.set_st(slave, skill, st[0].level + 1)
+        self.set_st(slave, skill, st[0].exp + exp)
+
+
+    def get_available_skills(self, slave):
+        """ Returns a list of skills with level currently available to train/use """
+        return Skill.objects.filter(Q(required_skills__in=Skill.objects.filter(skilltrained__slave=slave,skilltrained__exp__gte=MIN_EXP_FOR_CHILD_SKILLS))|Q(required_skills__isnull=True)).order_by('difficulty').order_by('required_skills', 'difficulty')
+
 
 
     def get_skill_level(self, slave, skill):
         """ Returns the current skill level of slave """
         st = SkillTrained.objects.filter(slave=slave, skill=skill)
-        return st.get().level if st else 0
+        return exp_to_lev(st.get().exp) if st else 0
     
     def use_skill(self, slave, skill, bonus=0):
         """ Returns boolean result of using skill. Bonus in range -1:1 can modify result """
@@ -74,10 +86,10 @@ class STManager(models.Manager):
         if req:
             return True # This happens with "base" skills.
 
-        print("Slave has required skill at level:",\
-                SkillTrained.objects.filter(slave=slave, skill=req.get()).get().level)
+        print("Slave has required skill with exp:",\
+                SkillTrained.objects.filter(slave=slave, skill=req.get()).get().exp)
 
-        return True if SkillTrained.objects.filter(slave=slave, skill=req.get()).get().level\
+        return True if exp_to_lev(SkillTrained.objects.filter(slave=slave, skill=req.get()).get().exp)\
                 >= SKILL_LEVEL_REQUIREMENT else False
 
 
@@ -85,13 +97,16 @@ class STManager(models.Manager):
 class SkillTrained(models.Model):
     slave = models.ForeignKey('slave.Slave')
     skill = models.ForeignKey('Skill')
-    level = models.PositiveSmallIntegerField(default=1,\
-            validators=[MinValueValidator(0), MaxValueValidator(100)])
+#    level = models.PositiveSmallIntegerField(default=1,\
+#            validators=[MinValueValidator(0), MaxValueValidator(100)])
+    exp   = models.PositiveIntegerField(default=1,\
+            validators=[MinValueValidator(0)])
+
     
     objects = STManager()
 
     def __str__(self):
-        return " ".join([str(self.slave), str(self.skill), str(self.level)])
+        return " ".join([str(self.slave), str(self.skill), str(exp_to_lev(self.exp))])
 
     class Meta:
         unique_together = (('slave', 'skill'))

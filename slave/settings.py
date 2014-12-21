@@ -3,9 +3,14 @@ from django.conf import settings
 GAME_YEAR = 3600 
 GAME_MONTH = GAME_YEAR / 12
 
-SKILL_LEVEL_REQUIREMENT = 50
+#SKILL_LEVEL_REQUIREMENT = 50
+MIN_EXP_FOR_CHILD_SKILLS = 1275 # Equiv level 50
 KILLER_SLAVES_LIMIT = 100
 CHANCE_TO_DIE = 1000.0
+
+PRIMARY_SKILL_FARMING_VALUE = 0.5
+SECONDARY_SKILLS_FARMING_VALUE = 0.5
+YIELD_RANDOMIZER = 25
 
 """ Do not change anything below this line. 
 Constants are just for information here. Better use special constants file. """
@@ -45,5 +50,8 @@ ATTRIBUTE_CHOICES = (
         (CHR, 'Charisma'),
 )
 
-
+TASK_TYPES = (
+        ('farming', 'Farming'),
+        ('crafting', 'Crafting'),
+)
 

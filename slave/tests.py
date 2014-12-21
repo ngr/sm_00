@@ -7,6 +7,7 @@ from random import random
 from slave.models import Slave, SlaveManager, RaceDefaults
 from skill.models import Skill, SkillTrained
 
+from slave.helpers_test import *
 from slave.settings import *
 
 class ParentsTests(TestCase):
@@ -265,12 +266,12 @@ class RaceDefaultsTests(TestCase):
             for param in RaceDefaults.objects.all().filter(param=a):
                 self.assertIn(param.value, range(1,11))
 
-
+"""
 def push_base_skill():
     cursor = connection.cursor()
-    cursor.execute("""INSERT INTO  `dj_sm_00`.`skill_skill`
+    cursor.execute(""INSERT INTO  `dj_sm_00`.`skill_skill`
      ( `id` , `name` , `primary_attribute` , `difficulty` )
-    VALUES ( NULL ,  'Learning1',  '0',  '1' );""")
+    VALUES ( NULL ,  'Learning1',  '0',  '1' );"")
     print("Executed raw SQL to create learning skill")
     return
 
@@ -283,19 +284,20 @@ def get_current_db_skills():
 
 
 def create_skill(name='Test skill', pr_attr=0, difficulty=1):
-    """ Creates a skill """
+    "" Creates a skill ""
     s = Skill(name=name, primary_attribute=pr_attr, difficulty=difficulty)
     s.save()
     return s
 
 
 def create_slave(name='Slave', age=1):
-    """ Creates a Slave with dayas_delta age """
+    "" Creates a Slave with dayas_delta age ""
     birth_time = timezone.now() - datetime.timedelta(seconds=(GAME_YEAR * age))
     sl = Slave.objects.spawn(name=name, date_birth=birth_time)
 #    sl = Slave.objects.spawn()
 #    print("create_slave() created slave", sl)
     return sl
+"""
 
 class SlaveViewTests(TestCase):
     def test_index_view_with_no_questions(self):

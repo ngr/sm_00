@@ -6,7 +6,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.core.files.storage import FileSystemStorage
 from slave.settings import *
 
-#from skill.models import Skill
+from skill.models import Skill, SkillTrained
 
 """ HERE ARE SOME HELPERS """
 def random_line(afile):
@@ -183,32 +183,84 @@ class Slave(models.Model):
     def is_alive(self):
         return self.date_birth <= timezone.now() and not self.date_death
 
-    def get_skills(self, *args):
-        """ Returns the current skill level on requested skills.
+#    def get_skills(self, *args):
+    """ Returns the current skill level on requested skills.
+            Args can be a list or single skills.
             If skill is not trained return 0 value.
             If args not set return all skills. """
-        result = {}
+#        result = {}
 
-        if not args:
-            """ Returning all trained skills.
+#        if not args:
+    """ Returning all trained skills.
             Should one day take all skills and return zeros if not trained
             same as we do it if request exists. """
-            sk_all = self.skilltrained_set.all()
-            if sk_all.exists():
-                for s in sk_all:
-                    result[s.skill] = s.level
-            return result
+#            sk_all = self.skilltrained_set.all()
+#            sk_all = SkillTrained.objects.get_available_skills(self)
+#            print(sk_all)
+#            if len(sk_all) > 0:
+#                for s in sk_all:
+#                    result[s] = SkillTrained.objects.get_skill_level(self, s)
+#            return result
 
-        for sk in args:
+#        for sk in args:
 #            print("Requested slave skill:", self, sk)
-#            print(self.skilltrained_set.all())
-            
-            if self.skilltrained_set.filter(skill=sk).exists():
-                # We know that skilltrained is unique so use get()
-                result[sk] = self.skilltrained_set.get(skill=sk).level
+
+    """print("sk is Skill instance:", sk.__class__.__name__ == 'Skill')
+            if sk.__class__.__name__ == 'Skill':
+                if self.skilltrained_set.filter(skill=sk).exists():
+                    result[sk] = self.skilltrained_set.get(skill=sk).level
+                else:
+                    result[sk] = 0
             else:
-                result[sk] = 0
+                for s in sk:
+#                    print("Processing s:", s)
+                    if self.skilltrained_set.filter(skill=s).exists():
+#                       print("Looks like this skill is trained:", s)
+                       result[s] = self.skilltrained_set.get(skill=s).level
+                    else:
+                        result[s] = 0"""
+
+
+    """if self.skilltrained_set.filter(skill=sk).exists():
+                    if sk.all().count() > 1: # Any of args can be a list
+                        for s in sk.all():
+                            if self.skilltrained_set.filter(skill=s).exists():
+#                               print("Looks like this secondary skill is trained:", s)
+                                result[s] = self.skilltrained_set.get(skill=s).level
+                    else:
+                # We know that skilltrained is unique so use get()
+                        result[sk] = self.skilltrained_set.get(skill=sk).level
+                else:
+                    result[sk] = 0 """
+#       print("Returning:", result)
+#        return result
+
+
+    def get_skill(self, skill):
+        return SkillTrained.objects.get_skill_level(self, skill)
+
+    def get_available_skills(self):
+        return SkillTrained.objects.get_available_skills(self)
+
+    def get_trained_skills(self):
+        result = {}
+        sk_all = SkillTrained.objects.get_available_skills(self)
+        if len(sk_all) > 0:
+            for s in sk_all:
+                result[s] = SkillTrained.objects.get_skill_level(self, s)
         return result
+
+
+########################
+# Slave update
+    def set_skill(self, skill, exp):
+        """ This is an admin function. Should hide it later. """
+        print(skill,exp)
+        sk = Skill.objects.get(pk=skill)
+        SkillTrained.objects.set_st(self, sk, exp)
+
+
+
 
 
 #################################

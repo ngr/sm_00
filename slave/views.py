@@ -29,6 +29,15 @@ def make_happy(request, sid):
     p.save()
     return HttpResponseRedirect(reverse('slave:results', args=(p.id,)))
 
+def set_skill(request, sid):
+    p = get_object_or_404(Slave, pk=sid)
+    p.set_skill(request.POST['skill'], request.POST['exp'])
+    return HttpResponseRedirect(reverse('slave:results', args=(p.id,)))
+
+def assign_task(request, sid):
+    p = get_object_or_404(Slave, pk=sid)
+    return HttpResponseRedirect(reverse('slave:results', args=(p.id,)))
+
 class ResultsView(generic.DetailView):
     model = Slave
     template_name = 'slave/detail.html'

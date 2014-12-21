@@ -1,3 +1,6 @@
+{% load staticfiles %}
+<link rel="stylesheet" type="text/css" href="{% static 'slave/style.css' %}" />
+
 <h1>{{ slave.name }}</h1>
 
 {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
@@ -9,6 +12,71 @@
     <li>Is a adult: {{ slave.is_adult }}</li>
     <li>Slave Sex: {{ slave.sex }}</li>
 </ul>
+
+<h3>Trained Skills</h3>
+<table class="skill_table" width="400px">
+    <tr>
+        <th class="skill_level_th">Dif</th>
+        <th class="skill_th">Skill</th>
+        <th class="skill_level_th">Level</th>
+        <th class="skill_level_th">Exp</th>
+    </tr>
+    {% for skill, level in slave.get_trained_skills.items %}
+    <tr>
+        <td class="skill_level_td">{{ skill.difficulty }}</td>
+        <td class="skill_td">{{ skill.name }}</td>
+        <td class="skill_level_td">{{ level }}</td>
+        <td class="skill_level_td">?</td>
+    </tr>
+    {% endfor %}
+</table>
+<br><br>
+
+<form action="{% url 'slave:set_skill' slave.id %}" method="post">
+    {% csrf_token %}
+    <input type="text" name="exp" id="exp" value="" />
+    <select name="skill" id="skill">
+        {% for skill in slave.get_available_skills %}
+            <option value="{{ skill.id}}">{{ skill.name }}</option>
+        {% endfor %}
+    </select>
+
+        <input type="submit" value="Boost skill" />
+</form>
+
+
+<table class="task_table" width="800px">
+    <tr>
+        <th class="task_type_th">Type</th>
+        <th class="task_details_th">Details</th>
+        <th class="task_date_th">Start</th>
+        <th class="task_date_th">Finish</th>
+        <th class="task_flag_th">Finished</th>
+        <th class="task_flag_th">Retrieved</th>
+
+    </tr>
+    {% for task in slave.task_set.all %}
+    <tr>
+        <td class="task_type_td">{{ task.get_type }}</td>
+        <td class="task_details_td">
+            {% if task.get_type == 'Farming' %}{{task.farming.get_specific_details }}{% endif %}
+        </td>
+        <td class="task_date_td">{{ task.date_start }}</td>
+        <td class="task_date_td">{{ task.date_finish }}</td>
+        <td class="task_flag_td">{{ task.is_finished }}</td>
+        <td class="task_flag_td">{{ task.retrieved }}</td>
+    </tr>
+    {% endfor %}
+</table>
+<br><br>
+
+<form action="{% url 'slave:assign_task' slave.id %}" method="post">
+{% csrf_token %}
+    <input>
+
+</form>
+
+<br><br>
 
 <form action="{% url 'slave:make_happy' slave.id %}" method="post">
 {% csrf_token %}
