@@ -62,7 +62,7 @@ class SkillManagerTests(TestCase):
         print("Created a connection")
         st = SkillTrained.objects.filter(slave=sl)
 
-        self.assertEqual(SkillTrained.objects.filter(slave=sl, skill=sk1).get().level, 3)
+        self.assertEqual(SkillTrained.objects.filter(slave=sl, skill=sk1).get().exp, 3)
 
     def test_set_st_with_skill_101(self):
         """ MaxValue is 100. Should return None """
@@ -90,10 +90,10 @@ class SkillManagerTests(TestCase):
         """ Should return skill level as defined """
         sl = create_slave()
         sk1 = create_skill()
-        SkillTrained.objects.set_st(sl, sk1, 7)
+        SkillTrained.objects.set_st(sl, sk1, 6)
         st = SkillTrained.objects.filter(slave=sl)
 
-        self.assertEqual(SkillTrained.objects.get_skill_level(sl, sk1), 7)
+        self.assertEqual(SkillTrained.objects.get_skill_level(sl, sk1), 3)
     
     def test_get_skill_level_with_skill_zero(self):
         """ Should return zero level """

@@ -1,6 +1,17 @@
-def validate(attr, minv=None, maxv=None):
-    if int(attr) < minv or int(attr) > maxv:
-        raise AttributeError("Parameter out of range")
+def validate_in_range_int(attr, minv='Zero', maxv='Zero'):
+    """  Check if int() attr is in range """
+    attr = int(float(attr))
+    if minv != 'Zero':
+        minv = int(float(minv))
+        if maxv != 'Zero':
+            maxv = int(float(maxv))
+            if maxv < minv:
+                minv, maxv = maxv, minv
+            if attr > maxv:
+                return False
+        else:
+            return False if attr < minv else True
+    return True
 
 def fit_to_range_int(attr, minv='Zero', maxv='Zero'):
     """ This returns int() of either minv or maxv if 
@@ -36,5 +47,6 @@ def exp_to_lev(exp, difficulty=1):
     while i < len(level_exp_ratio) and exp >= level_exp_ratio[i]:
         i += 1
     return i
+
 
 

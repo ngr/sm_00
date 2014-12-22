@@ -77,42 +77,22 @@ class SlaveMethodTests(TestCase):
     CHILD_AGE = 15
     REPRODUCTIVE_AGE = 25
 
-    """ Tests for get_skills().
+    """ Tests for skills.
         As far as direct access to Skill class is not recommended
         this should be done via Slave objects """
 
-    def test_get_skills_with_one_st(self):
+    def test_get_skill(self):
         """ Request one with one trained """
         sl = create_slave()
         sk1 = create_skill()
-        SkillTrained.objects.set_st(sl, sk1, 50)
-        self.assertEqual(sl.get_skills(sk1)[sk1], 50)
+        SkillTrained.objects.set_st(sl, sk1, 6)
+        self.assertEqual(sl.get_skill(sk1), 3)
 
-    def test_get_skills_with_zero_st(self):
+    def test_get_skill_with_zero_st(self):
         """ Request one with none trained """
         sl = create_slave()
         sk1 = create_skill()
-        self.assertEqual(sl.get_skills(sk1)[sk1], 0)
-
-    def test_get_skills_with_many_st(self):
-        """ Request for skill with no args with multiple trained """
-        sl = create_slave()
-        sk1 = create_skill()
-        sk2 = create_skill(name='sk2 skill')
-        SkillTrained.objects.set_st(sl, sk1, 50)
-        SkillTrained.objects.set_st(sl, sk2, 30)
-        self.assertEqual(sl.get_skills()[sk2], 30)
-
-
-    def test_get_skills_one_from_many_st(self):
-        """ Request for skills with multiple args with multiple trained """
-        sl = create_slave()
-        sk1 = create_skill()
-        sk2 = create_skill(name='sk2 skill')
-        SkillTrained.objects.set_st(sl, sk1, 50)
-        SkillTrained.objects.set_st(sl, sk2, 30)
-        
-        self.assertEqual(sl.get_skills(*[sk1, sk2])[sk1], 50)
+        self.assertEqual(sl.get_skill(sk1), 0)
 
 
 

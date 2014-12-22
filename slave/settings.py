@@ -12,6 +12,12 @@ PRIMARY_SKILL_FARMING_VALUE = 0.5
 SECONDARY_SKILLS_FARMING_VALUE = 0.5
 YIELD_RANDOMIZER = 25
 
+
+MIN_LOCATION_SIZE = 1
+
+# Housing
+MIN_BED_AREA    = 3
+MAX_BED_AREA    = 10
 """ Do not change anything below this line. 
 Constants are just for information here. Better use special constants file. """
 
@@ -54,4 +60,10 @@ TASK_TYPES = (
         ('farming', 'Farming'),
         ('crafting', 'Crafting'),
 )
+
+LOCATION_TYPES = (
+        ('farmingfield', 'Farming Field'),
+        ('housingdistrict', 'Housing District'),
+)
+
 

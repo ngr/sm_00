@@ -7,6 +7,7 @@ from django.core.files.storage import FileSystemStorage
 from slave.settings import *
 
 from skill.models import Skill, SkillTrained
+from area.models import HousingDistrict
 
 """ HERE ARE SOME HELPERS """
 def random_line(afile):
@@ -133,6 +134,7 @@ class Slave(models.Model):
 #    RACE_CHOICES = (
 #            (BLUE, 'Blue'),
 #            (CYAN, 'Cyan'),
+
 #            (AQUA, 'Aqua'),
 #            )
     name = models.CharField(max_length=127)
@@ -154,6 +156,8 @@ class Slave(models.Model):
             validators=[MinValueValidator(-100), MaxValueValidator(100)])
     satiety = models.PositiveSmallIntegerField(default=0,\
             validators=[MinValueValidator(0), MaxValueValidator(100)])
+
+    location = models.ForeignKey(HousingDistrict, null=True)
 
     objects = SlaveManager()
 
@@ -258,6 +262,20 @@ class Slave(models.Model):
         print(skill,exp)
         sk = Skill.objects.get(pk=skill)
         SkillTrained.objects.set_st(self, sk, exp)
+
+    def set_location(self, region):
+        """ House the slave to the given region """
+        try:
+            loc = region.house_slave(self)
+        except:
+            print("Could not house %s to region %s" % (self, region))
+            return False
+
+        if loc:
+            self.location = loc
+            self.save()
+
+
 
 
 
