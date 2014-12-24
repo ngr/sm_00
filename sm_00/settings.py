@@ -40,6 +40,7 @@ INSTALLED_APPS = (
     'skill',
     'task',
     'area',
+    'item',
 )
 
 MIDDLEWARE_CLASSES = (

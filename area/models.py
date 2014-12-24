@@ -3,6 +3,8 @@ from django.db.models import Sum
 from django.core.validators import MaxValueValidator, MinValueValidator
 from operator import itemgetter, attrgetter, methodcaller
 
+from item.models import Item, Food
+
 from slave.helpers import *
 from slave.settings import *
 #from slave.models import Slave
@@ -99,7 +101,6 @@ class FarmingField(Location):
         return False
 
 class HousingDistrict(Location):
-#    beds = models.PositiveIntegerField(default=0)
 
 #    def add_inhabitant(self, number=1):
 #        """ Add 'number' of new inhabitants to housing district if fit """
@@ -110,7 +111,7 @@ class HousingDistrict(Location):
 #            return True
 
     def get_comfort(self):
-        """ Should return more ccomplex comfort later """
+        """ Should return more complex comfort later """
         max_guys, min_guys = self.area / MIN_BED_AREA, self.area / MAX_BED_AREA
         c = -(self.get_beds() /(max_guys - min_guys)) + max_guys / (max_guys - min_guys)
         return 1 if c > 1 else c
@@ -122,6 +123,47 @@ class HousingDistrict(Location):
     def get_free_beds(self):
         """ Return the number of space left for maximum density beds """
         return int(self.area / MIN_BED_AREA - self.get_beds())
+
+
+
+
+##############
+# Warehouses #
+##############
+
+class Warehouse(models.Model):
+    _name   = models.CharField(max_length=127, default='Warehouse item')
+    _region = models.ForeignKey(Region)
+
+    def __str__(self):
+        return self.name
+
+class FoodStock(Warehouse):
+    _food = models.ForeignKey(Food)
+    _expires = models.DateTimeField()
+
+    def put(self, food_type, amount=1, age=0):
+        """ Keep in storage the given amount of food.
+            If there is food of same type with same expiry age, 
+            just add this amount to the pile. """
+
+#        ft = FoodType.get(pk=food_type)
+        expiry_date = timezone.now()\
+#                + datetime.timedelta(seconds=ft.get_shelf_life())\
+#                - datetime.timedelta(seconds=(age * MIN_FOOD_SHELF_LIFE)) * age
+        if ROUND_TO_MINUTES:
+            expiry_date.replace(second=0)
+        expire_date.replace(microsecond=0)
+
+ #       print("Trying to add % of % to region %s" % (amount, food_type, super(self._region)))
+        
+
+    def take(self):
+        pass
+
+
+
+
 
 
 # Create your models here.

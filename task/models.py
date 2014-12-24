@@ -16,9 +16,10 @@ class TaskManager(models.Manager):
 
         print(Task.objects.filter(slave=slave, date_finish__gt=timezone.now()))
 
-        execution_time = 10 # Months. To be received from task type
+        execution_time = 15 # Months. To be received from task type
 
-        t = Task(slave=slave, date_start=timezone.now(), date_finish=(timezone.now() + datetime.timedelta(seconds=GAME_MONTH * execution_time)))
+        t = Task(slave=slave, date_start=timezone.now(),\
+                date_finish=(timezone.now() + datetime.timedelta(seconds=GAME_DAY * execution_time)))
         t.save()
         return t
 
@@ -27,7 +28,7 @@ class FarmingManager(models.Manager):
 
     def assign(self, slave, plant):
         print("Assigning farming task to:", slave)
-        t = Farming(slave=slave, date_start=timezone.now(), date_finish=(timezone.now() + datetime.timedelta(seconds=GAME_MONTH * plant.exec_time)), plant=plant)
+        t = Farming(slave=slave, date_start=timezone.now(), date_finish=(timezone.now() + datetime.timedelta(seconds=GAME_MONTH * plant.get_exec_time())), plant=plant)
         t.save()
         return t
         
@@ -121,13 +122,13 @@ class Farming(Task):
         if not strict:
             result += (result * (randrange(-YIELD_RANDOMIZER, YIELD_RANDOMIZER) / 100.0))
         
-        return result
+
+
+        return (self.plant.get_yield_type(), result)
 
     def get_specific_details(self):
         r = ""
         r += self.plant.name
         r += " estimated: " + str(self.get_yield())
         return r
-
-
 
