@@ -50,3 +50,16 @@ def exp_to_lev(exp, difficulty=1):
 
 
 
+def clean_string_title(attr):
+    return str(attr).strip().title()
+
+def clean_string_lower(attr):
+    return str(attr).strip().lower()
+
+def clean_string_upper(attr):
+    return str(attr).strip().upper()
+
+
+
+
+

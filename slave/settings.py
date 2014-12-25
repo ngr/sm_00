@@ -71,4 +71,13 @@ LOCATION_TYPES = (
         ('housingdistrict', 'Housing District'),
 )
 
+ITEM_TYPES = (
+        ('fooddirectory', 'Food'),
+        ('materialdirectory', 'Material'),
+)
+
+
+
+
+
 

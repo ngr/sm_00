@@ -2,14 +2,14 @@ from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 
 from skill.models import Skill
-from item.models import Item, Food
+from item.models import Item
 
 class Plant(models.Model):
     _name = models.CharField(max_length=127)
     _primary_skill = models.ForeignKey(Skill, related_name='+')
     _secondary_skill   = models.ManyToManyField(Skill, related_name='+')
 
-    _yield_item  = models.ForeignKey(Item)
+#    _yield_item  = models.ForeignKey(ItemDirectory)
     
     _base_yield  = models.PositiveSmallIntegerField(default=1)
 

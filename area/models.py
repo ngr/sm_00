@@ -3,7 +3,8 @@ from django.db.models import Sum
 from django.core.validators import MaxValueValidator, MinValueValidator
 from operator import itemgetter, attrgetter, methodcaller
 
-from item.models import Item, Food
+#from item.models import Item, Food
+from item.models import Item
 
 from slave.helpers import *
 from slave.settings import *
@@ -138,29 +139,30 @@ class Warehouse(models.Model):
     def __str__(self):
         return self.name
 
-class FoodStock(Warehouse):
+
+"""class FoodStock(Warehouse):
     _food = models.ForeignKey(Food)
     _expires = models.DateTimeField()
 
     def put(self, food_type, amount=1, age=0):
-        """ Keep in storage the given amount of food.
+        "" Keep in storage the given amount of food.
             If there is food of same type with same expiry age, 
-            just add this amount to the pile. """
+            just add this amount to the pile. ""
 
-#        ft = FoodType.get(pk=food_type)
+        ft = FoodType.get(pk=food_type)
         expiry_date = timezone.now()\
-#                + datetime.timedelta(seconds=ft.get_shelf_life())\
-#                - datetime.timedelta(seconds=(age * MIN_FOOD_SHELF_LIFE)) * age
+                + datetime.timedelta(seconds=ft.get_shelf_life())\
+                - datetime.timedelta(seconds=(age * MIN_FOOD_SHELF_LIFE)) * age
         if ROUND_TO_MINUTES:
             expiry_date.replace(second=0)
         expire_date.replace(microsecond=0)
 
- #       print("Trying to add % of % to region %s" % (amount, food_type, super(self._region)))
+        print("Trying to add % of % to region %s" % (amount, food_type, super(self._region)))
         
 
     def take(self):
         pass
-
+"""
 
 
 
