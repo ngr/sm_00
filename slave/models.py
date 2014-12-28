@@ -1,5 +1,6 @@
 import datetime
 from random import random, randrange, choice
+from math import floor
 from django.db import models
 from django.utils import timezone
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -163,6 +164,14 @@ class Slave(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_name(self):
+        """ Return the name of the Slave """
+        return self.name
+
+    def get_age(self):
+        """ Return age of the Slave """
+        return floor((timezone.now() - self.date_birth).total_seconds() / GAME_YEAR)
 
     def is_baby(self):
         return timezone.now() - datetime.timedelta(seconds=(GAME_YEAR * BABY_AGE))\

@@ -1,0 +1,38 @@
+<h1>Deatails of region: {{ region.name }}</h1>
+
+    <h2>Locations:</h2>
+    <ul>
+        {% for loc, prop in housing.items %}
+        <li>{{ loc.get_name }}</li>
+        <ul>
+            {% for k, v in prop.items %}
+            <li>{{ k }}: {{ v }}
+            {% endfor %}
+        </ul>
+        {% endfor %}
+    </ul>
+
+    <h2>Farming Fields</h2>
+    <ul>
+        {% for loc, prop in farming.items %}
+        <li>{{ loc.get_name }}</li>
+        <ul>
+            {% for k, v in prop.items %}
+            <li>{{ k }}: {{ v }}
+            {% endfor %}
+        </ul>
+        {% endfor %}
+    </ul>
+
+    <h2>Inhabitants</h2>
+<ul>
+    {% for district, slaves in inhabitants.items %}
+    <li>{{ district.get_name }}</li>
+    <ul>
+        {% for sl in slaves %} 
+        <li><a href=""> {{sl }}</a> - {{sl.get_age}}</li>
+        {% endfor %}
+    </ul>
+    {% endfor %}
+</ul>
+

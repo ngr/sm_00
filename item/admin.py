@@ -3,7 +3,12 @@ from item.models import ItemDirectory, FoodDirectory, MaterialDirectory, Item, F
 #from item.models import ItemDirectory, FoodDirectory, ItemType, Item, Food
 
 
-admin.site.register(ItemDirectory)
+class ItemDirectoryAdmin(admin.ModelAdmin):
+    list_display = ('_name', 'get_type', 'is_core')
+#    list_filter = ['get_type']
+    list_ordering = ['is_core']
+
+admin.site.register(ItemDirectory, ItemDirectoryAdmin)
 admin.site.register(FoodDirectory)
 admin.site.register(MaterialDirectory)
 #admin.site.register(ItemType)

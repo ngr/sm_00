@@ -9,16 +9,9 @@ from slave.helpers import *
 class ItemManager(models.Manager):
     pass
 
-
-#class ItemType(models.Model):
-#    """ Types of items with common properties """
-#    name    = models.CharField(max_length=127, default='')
-    
-#    def __str__(self):
-#        return self.name
-
 class ItemDirectory(models.Model):
-    """ Do not worry that this 3-step schema looks complicated. Will be OK """
+    """ This is the main list of all types of files. 
+        Any subclasses exist here and refer ManyToMany(self) """
     _name    = models.CharField(max_length=127, default='')
     _related   = models.ManyToManyField('self', blank=True, symmetrical=False)
 
@@ -47,6 +40,16 @@ class ItemDirectory(models.Model):
         child_type = getattr(self.get_type()[itype], t[0])
         get_method = getattr(child_type, ('get_' + clean_string_lower(param)))
         return get_method()
+
+    def is_core(self):
+        if self._related.all().count() > 0:
+            return True
+        else:
+            return False
+    is_core.admin_order_field = '_related'
+    is_core.boolean = True
+    is_core.short_description = "Core Item"
+
 
 
 class MaterialDirectory(ItemDirectory):
