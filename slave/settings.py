@@ -66,6 +66,11 @@ TASK_TYPES = (
         ('crafting', 'Crafting'),
 )
 
+TASK_DIRECTORIES = (
+        ('farmingtaskdirectory', 'Farming Task Directory'),
+        ('craftingtaskdirectory', 'Crafting Task Directory'),
+)
+
 LOCATION_TYPES = (
         ('farmingfield', 'Farming Field'),
         ('housingdistrict', 'Housing District'),

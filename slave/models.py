@@ -9,6 +9,7 @@ from slave.settings import *
 
 from skill.models import Skill, SkillTrained
 from area.models import HousingDistrict
+from task.models import Assignment
 
 """ HERE ARE SOME HELPERS """
 def random_line(afile):

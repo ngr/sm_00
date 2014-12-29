@@ -30,7 +30,7 @@
     <li>{{ district.get_name }}</li>
     <ul>
         {% for sl in slaves %} 
-        <li><a href=""> {{sl }}</a> - {{sl.get_age}}</li>
+        <li><a href="{% url 'slave:detail' sl.pk %}"> {{sl }}</a> - {{sl.get_age}}</li>
         {% endfor %}
     </ul>
     {% endfor %}

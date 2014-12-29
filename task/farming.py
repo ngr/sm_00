@@ -1,17 +1,18 @@
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 
-from skill.models import Skill
-from item.models import ItemDirectory
+#from skill.models import Skill
+#from item.models import ItemDirectory
 
 ######################################
 # MOVE THIS SOMEWHERE FROM TASKS!!!!!!
+
 class Plant(models.Model):
     _name = models.CharField(max_length=127)
-    _primary_skill = models.ForeignKey(Skill, related_name='+')
-    _secondary_skill   = models.ManyToManyField(Skill, related_name='+')
+    _primary_skill = models.ForeignKey('skill.Skill', related_name='+')
+    _secondary_skill   = models.ManyToManyField('skill.Skill', related_name='+')
 
-    _yield_item  = models.ForeignKey(ItemDirectory)
+    _yield_item  = models.ForeignKey('item.ItemDirectory')
     
     _base_yield  = models.PositiveSmallIntegerField(default=1)
 
@@ -39,7 +40,6 @@ class Plant(models.Model):
 
     def get_plantation_area(self):
         return self._plantation_area
-
 
 
 

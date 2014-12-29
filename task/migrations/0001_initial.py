@@ -7,21 +7,34 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('slave', '0022_auto_20141212_0742'),
     ]
 
     operations = [
         migrations.CreateModel(
             name='Task',
             fields=[
-                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
-                ('date_start', models.DateTimeField(verbose_name='Time of task start')),
-                ('date_finish', models.DateTimeField(verbose_name='Time of task finish')),
-                ('retrieved', models.BooleanField(default=False)),
-                ('slave', models.ForeignKey(to='slave.Slave')),
+                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
+                ('_date_init', models.DateTimeField()),
+                ('_retrieved', models.BooleanField(default=False)),
             ],
             options={
             },
             bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='TaskType',
+            fields=[
+                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
+                ('_name', models.CharField(max_length=127)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.AddField(
+            model_name='task',
+            name='_type',
+            field=models.ForeignKey(to='task.TaskType'),
+            preserve_default=True,
         ),
     ]

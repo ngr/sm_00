@@ -3,8 +3,8 @@ from django.db.models import Sum
 from django.core.validators import MaxValueValidator, MinValueValidator
 from operator import itemgetter, attrgetter, methodcaller
 
-#from item.models import Item, Food
-from item.models import Item
+from item.models import Item, Food
+#from item.models import Item
 
 from slave.helpers import *
 from slave.settings import *
@@ -171,17 +171,40 @@ class HousingDistrict(Location):
 # Warehouses #
 ##############
 
-class Warehouse(models.Model):
-    _name   = models.CharField(max_length=127, default='Warehouse item')
+class WarehouseBuilding(models.Model):
+    _name   = models.CharField(max_length=127)
     _region = models.ForeignKey(Region)
-    _item   = models.ForeignKey(Item)
+    _type   = models.CharField(max_length=127, choices=ITEM_TYPES)
+
+# One day we shall add limit of storage available in Warehouse
 
     def __str__(self):
-        return self.name
+        return self._name
+
+    def get_type(self):
+        return self._type
+
+    class Meta:
+        unique_together = (('_region', '_type'))
+
+#    def get_items(self):
+#        return self.warehouse_set.all()
+
+
+
+class Warehouse(models.Model):
+    _building = models.ForeignKey(WarehouseBuilding)
+    _item   = models.ForeignKey(Item, unique=True)
+
+    def __str__(self):
+        return self._item
+
 
 
 class FoodStock(Warehouse):
-    _item = models.ForeignKey(Food)
+#    def __init__(self):
+#        super(Warehouse, self)._item = models.ForeignKey(Food)
+
     
     def put(self, food_type, amount=1, age=0):
         """ Keep in storage the given amount of food.

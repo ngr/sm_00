@@ -69,8 +69,18 @@ DATABASES = {
         'USER': 'dj_dbuser',
         'PASSWORD': 'P@ssw0rd',
         'PORT': '3306',
+    },
+    'db_task': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'dj_sm_01',
+        'HOST': '127.0.0.1',
+        'USER': 'dj_dbuser',
+        'PASSWORD': 'P@ssw0rd',
+        'PORT': '3306',
     }
 }
+
+#DATABASE_ROUTERS = ['task.dbRouter.AppSpecificDBRouter']
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
