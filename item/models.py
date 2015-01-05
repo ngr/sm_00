@@ -89,10 +89,11 @@ class FoodDirectory(ItemDirectory):
         pass
 
 class Item(models.Model):
-    _name    = models.CharField(max_length=127, default='SomeItem')
+    _name    = models.CharField(max_length=127, blank=True)
     _itype   = models.ForeignKey(ItemDirectory)
     _amount  = models.PositiveIntegerField(default=1)
     _date_init = models.DateTimeField()
+    _building  = models.ForeignKey('area.WarehouseBuilding')
 
     objects = ItemManager()
 

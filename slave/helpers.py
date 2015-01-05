@@ -1,3 +1,38 @@
+def fit_to_range_float(attr, minv='Zero', maxv='Zero'):
+    """ This returns float() of either minv or maxv if
+    attr is out of limits. Otherwise float() of given attribute. """
+
+    attr = float(attr)
+    if minv != 'Zero':
+        minv = float(minv)
+        if maxv != 'Zero':
+            maxv = float(maxv)
+            if maxv < minv:
+                print("Limits are inaccurate")
+                minv, maxv = maxv, minv
+            if attr > maxv:
+                return maxv
+        else:
+            return minv if attr < minv else attr
+    return minv if attr < minv else attr
+
+
+def validate_in_range_float(attr, minv='Zero', maxv='Zero'):
+    """  Check if float() attr is in range """
+    attr = float(attr)
+    if minv != 'Zero':
+        minv = float(minv)
+        if maxv != 'Zero':
+            maxv = float(maxv)
+            if maxv < minv:
+                minv, maxv = maxv, minv
+            if attr > maxv:
+                return False
+        else:
+            return False if attr < minv else True
+    return True
+
+
 def validate_in_range_int(attr, minv='Zero', maxv='Zero'):
     """  Check if int() attr is in range """
     attr = int(float(attr))

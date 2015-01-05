@@ -26,7 +26,7 @@ class Plant(models.Model):
     def get_primary_skill(self):
         return self._primary_skill
 
-    def get__secondary_skill(self):
+    def get_secondary_skill(self):
         return self._secondary_skill
 
     def get_yield_item(self):

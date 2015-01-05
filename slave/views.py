@@ -5,6 +5,7 @@ from django.views import generic
 from django.utils import timezone
 
 from slave.models import Slave
+from area.models import Region
 
 class IndexView(generic.ListView):
 
@@ -12,9 +13,10 @@ class IndexView(generic.ListView):
     context_object_name = 'slaves_list'
 
     def get_queryset(self):
-        return Slave.objects.filter(
-                date_birth__lte=timezone.now()
-                ).order_by('-id')[:5]
+        return Region.objects.all().get(pk=2).get_slaves()
+#       return Slave.objects.filter(
+#               date_birth__lte=timezone.now()
+#               ).order_by('-id')[:5]
 
 class SlaveView(generic.DetailView):
     model = Slave

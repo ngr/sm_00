@@ -7,16 +7,18 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('task', '0004_auto_20141217_1519'),
+        ('area', '0014_auto_20150105_1559'),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='plant',
-            name='primary_skill',
+            model_name='foodstock',
+            name='warehouse_ptr',
         ),
-        migrations.RemoveField(
-            model_name='plant',
-            name='secondary_skill',
+        migrations.DeleteModel(
+            name='FoodStock',
+        ),
+        migrations.DeleteModel(
+            name='Warehouse',
         ),
     ]

@@ -53,12 +53,35 @@ class STManager(models.Manager):
     def add_exp(self, slave, skill, exp=1):
         """ This is a shortcut to increase skill experience """
         st = SkillTrained.objects.filter(slave=slave, skill=skill)
-        self.set_st(slave, skill, st[0].exp + exp)
+        if not st:
+            st = SkillTrained(slave=slave, skill=skill, exp=exp)
+            st.save()
+        else:
+            self.set_st(slave, skill, st[0].exp + exp)
 
 
     def get_available_skills(self, slave):
-        """ Returns a list of skills with level currently available to train/use """
-        return Skill.objects.filter(Q(required_skills__in=Skill.objects.filter(skilltrained__slave=slave,skilltrained__exp__gte=MIN_EXP_FOR_CHILD_SKILLS))|Q(required_skills__isnull=True)).order_by('difficulty').order_by('required_skills', 'difficulty')
+        """ Return a list of skills with level currently available to train/use """
+    # This looks quite comlicated... 
+    # The idea is to check if required skills are trained enough to open the new skill
+        r = Skill.objects.filter(Q(required_skills__in=Skill.objects.filter(skilltrained__slave=slave,skilltrained__exp__gte=MIN_EXP_FOR_CHILD_SKILLS))|Q(required_skills__isnull=True)).order_by('difficulty').order_by('required_skills', 'difficulty')
+    # Now we check if there are available skills with zero exp. We set it to 1 to make skill really available
+        refresh = False
+        for s in r:
+            if self.get_skill_level(slave, s) == 0:
+                print("New skill available!", s)
+                self.add_exp(slave, s)
+                refresh = True
+    # SkillTrained objects have been updated need to refresh result!
+        if refresh:
+            r = Skill.objects.filter(Q(required_skills__in=Skill.objects.filter(skilltrained__slave=slave,skilltrained__exp__gte=MIN_EXP_FOR_CHILD_SKILLS))|Q(required_skills__isnull=True)).order_by('difficulty').order_by('required_skills', 'difficulty')
+        return r
+
+
+    def get_slave_skills(self, slave):
+        """ Brand new function to return skills with exp """
+        return SkillTrained.objects.filter(skill__in=Skill.objects.filter(Q(required_skills__in=Skill.objects.filter(skilltrained__slave=slave,skilltrained__exp__gte=MIN_EXP_FOR_CHILD_SKILLS))|Q(required_skills__isnull=True)).order_by('difficulty').order_by('required_skills', 'difficulty'), slave=slave)
+
 
 
 
@@ -111,6 +134,12 @@ class SkillTrained(models.Model):
     class Meta:
         unique_together = (('slave', 'skill'))
 
+################
+#
+###############
+
+    def get_skill_exp(self):
+        return self.exp
 
 
 

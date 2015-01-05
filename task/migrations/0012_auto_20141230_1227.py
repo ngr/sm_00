@@ -7,20 +7,20 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('skill', '0005_delete_skilltrainedmanager'),
-        ('task', '0005_auto_20141217_1521'),
+        ('skill', '0006_auto_20141220_1425'),
+        ('task', '0011_auto_20141230_1226'),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='plant',
-            name='primary_skill',
+            model_name='taskdirectory',
+            name='_primary_skill',
             field=models.ForeignKey(related_name='+', to='skill.Skill', default=1),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='plant',
-            name='secondary_skill',
+            model_name='taskdirectory',
+            name='_secondary_skill',
             field=models.ManyToManyField(related_name='+', to='skill.Skill'),
             preserve_default=True,
         ),

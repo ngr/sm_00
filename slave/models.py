@@ -8,8 +8,8 @@ from django.core.files.storage import FileSystemStorage
 from slave.settings import *
 
 from skill.models import Skill, SkillTrained
-from area.models import HousingDistrict
-from task.models import Assignment
+from area.models import HousingDistrict, Location
+from task.models import Assignment, Task, TaskDirectory as TD
 
 """ HERE ARE SOME HELPERS """
 def random_line(afile):
@@ -174,6 +174,10 @@ class Slave(models.Model):
         """ Return age of the Slave """
         return floor((timezone.now() - self.date_birth).total_seconds() / GAME_YEAR)
 
+    def get_location(self):
+        """ Return current location of Slave """
+        return self.location
+
     def is_baby(self):
         return timezone.now() - datetime.timedelta(seconds=(GAME_YEAR * BABY_AGE))\
             <= self.date_birth <= timezone.now() and not self.date_death
@@ -264,14 +268,45 @@ class Slave(models.Model):
                 result[s] = SkillTrained.objects.get_skill_level(self, s)
         return result
 
+    def get_test(self):
+        sk_all = SkillTrained.objects.get_slave_skills(self)
+        print("SK ALL", sk_all)
+        return sk_all
+
+    def get_assignments(self, active=True):
+        return Assignment.objects.get_slave_assignments(slave=self, active=True) if active\
+                else Assignment.objects.get_slave_assignments(slave=self, active=False)
+
+    def is_free(self):
+        return self.get_assignments(True).count() == 0
+
 
 ########################
 # Slave update
     def set_skill(self, skill, exp):
         """ This is an admin function. Should hide it later. """
         print(skill,exp)
-        sk = Skill.objects.get(pk=skill)
+        if not isinstance(skill, Skill):
+            if isinstance(skill, int):
+                sk = Skill.objects.get(pk=skill)
+            else:
+                raise AttributeError("Skill must be <Skill> or int")
+        else:
+            sk = skill
         SkillTrained.objects.set_st(self, sk, exp)
+
+    def add_skill_exp(self, skill, exp=1):
+        """ Add some exp to current skill exp """
+        print("Adding {1} exp in {0} for slave {2}".format(skill, exp, self))
+        if not isinstance(skill, Skill):
+            if isinstance(skill, int):
+                sk = Skill.objects.get(pk=skill)
+            else:
+                raise AttributeError("Skill must be <Skill> or int")
+        else:
+            sk = skill
+        SkillTrained.objects.add_exp(self, sk, exp)
+
 
     def set_location(self, region):
         """ House the slave to the given region """
@@ -284,6 +319,28 @@ class Slave(models.Model):
         if loc:
             self.location = loc
             self.save()
+
+    def assign_to_task(self, task):
+        print("Assigning {0} to task {1}".format(self, task))
+        Assignment.objects.assign(slave=self, task=task)
+
+
+    def employ(self):
+        """ Find some job for Slave """
+
+        if not self.is_free():
+            raise TaskError("WARNING! {0} cannot be employed. Slave is busy already!".format(self))
+
+        task_type = TD.objects.get(pk=choice([1,2,3]))
+        task_location = Location.objects.get(pk=1)
+        
+        t = Task(_type=task_type, _location=task_location)
+
+        self.assign_to_task(t)
+
+
+
+
 
 
 

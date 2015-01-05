@@ -7,14 +7,14 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('task', '0003_auto_20141217_1337'),
+        ('task', '0013_auto_20141230_1958'),
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name='plant',
-            name='secondary_skill',
-            field=models.ForeignKey(to='skill.Skill', related_name='+'),
+        migrations.AddField(
+            model_name='task',
+            name='_yield',
+            field=models.FloatField(default=0.0),
             preserve_default=True,
         ),
     ]

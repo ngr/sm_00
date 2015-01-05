@@ -1,0 +1,59 @@
+<link rel="stylesheet" href="{{ STATIC_URL }}django_tables2/themes/paleblue/css/screen.css" />
+
+<h1>Deatails of task: {{ task.id }}</h1>
+
+    <table class='paleblue'>
+        <tr>
+           <th>Type</th>
+           <td>{{ task.get_type }}</td>
+        </tr>
+        <tr>
+           <th>Started</th>
+           <td>{{ task.get_date_start }}</td>
+        </tr>
+        <tr>
+           <th>Finished</th>
+           <td>{{ task.get_date_finish }}</td>
+        </tr>
+        <tr>
+           <th>Location</th>
+           <td>{{ task.get_location }}</td>
+        </tr>
+        <tr>
+           <th>Yield amount</th>
+           <td>{{ task.get_yield }}</td>
+        </tr>
+        <tr>
+            <th>Finished</th>
+            <td>{{ task.is_finished }}</td>
+        </tr>
+        <tr>
+            <th>Retrieved</th>
+            <td>{{ task.is_retrieved }}</td>
+
+    </table>
+
+
+    <h2>Assignments</h2>
+    <table class='paleblue'>
+    <thead>
+        <tr>
+           <th>Started</th>
+           <th>Slave</th>
+           <th>Active</th>
+            <th>Estimated yield</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for v  in assignments %}
+        <tr>
+            <td>{{ v.get_date_assigned }} </td>
+            <td>{{ v.get_slave }} </td>
+            <td>{{ v.is_running }} </td>
+            <td>{{ v.get_estimated_yield }} </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    </table>
+
+

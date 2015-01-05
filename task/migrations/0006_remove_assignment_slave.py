@@ -7,12 +7,12 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('task', '0008_auto_20141223_2258'),
+        ('task', '0005_auto_20141230_0921'),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='plant',
-            name='_yield_item',
+            model_name='assignment',
+            name='slave',
         ),
     ]

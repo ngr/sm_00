@@ -17,7 +17,7 @@ class RegionManager(models.Manager):
 
 
 class Region(models.Model):
-    name = models.CharField(max_length=127)
+    _name = models.CharField(max_length=127)
     area = models.BigIntegerField(default=1, validators=[MinValueValidator(1)])
     owner = 1
 
@@ -27,7 +27,7 @@ class Region(models.Model):
         """ Return free area not assigned to locations """
         return self.area - self.location_set.all().aggregate(Sum('area'))['area__sum']
 
-    def get_slaves(self, withdead=True):
+    def get_slaves(self, withdead=False, free=False, by_districts=False):
         """ List of slaves currently living in HousingDistricts of the Region """
         inhabitants = {}
         districts = self.get_housing()
@@ -36,9 +36,22 @@ class Region(models.Model):
                 inhabitants[d] = d.housingdistrict.get_inhabitants(withdead=True)
             else:
                 inhabitants[d] = d.housingdistrict.get_inhabitants()
-        print(inhabitants)
+#        print(inhabitants)
+
+        if by_districts:
+            for k, v in inhabitants.items():
+                inhabitants[k] = [s for s in v if s.is_free()]
+            
+        else:
+            temp = []
+            for k, v in inhabitants.items():
+                temp += v
+#            print(temp)
+            inhabitants = temp
+            if free:
+                inhabitants = [s for s in inhabitants if s.is_free()]      
         return inhabitants
-        
+     
 #    def get_slaves_count(self, withdead=False):
 #        """ List of slaves currently located in Region """
 #        return self.slave_set.all().filter(date_death__isnull=True).count() if not withdead\
@@ -97,7 +110,12 @@ class Region(models.Model):
         return self.location_set.all()
 
     def __str__(self):
-        return ' '.join([self.name, '-', format(self.area, ',d'), 'm2'])
+        return self._name
+
+    def put_to_warehouse(self, item, amount):
+        """ This is the main entry function to put items to Region warehouses """
+        print("Putting {2} of {1} to warehouse in region {0}".format(self, item, amount))
+
 
 
 class Location(models.Model):
@@ -114,6 +132,10 @@ class Location(models.Model):
         """ Return the area of location """
         return self._area
 
+    def get_region(self):
+        """ Return the parent Region of Location """
+        return self.region
+
     def set_area(self, a):
         """ Set the area of location if there is free area in Region """
         if not validate_in_range_int(a, MIN_LOCATION_SIZE, super(get_free_area)):
@@ -121,6 +143,13 @@ class Location(models.Model):
         self._area = int(float(a))
 
     def get_type(self):
+        """ Returns readable type of location object """
+        for t in LOCATION_TYPES:
+            if hasattr(self, t[0]):
+                return t[0]
+        return False
+
+    def get_type_str(self):
         """ Returns readable type of location object """
         for t in LOCATION_TYPES:
             if hasattr(self, t[0]):
@@ -171,6 +200,13 @@ class HousingDistrict(Location):
 # Warehouses #
 ##############
 
+#class WHM(models.Manager):
+    
+#    def get_warehouse(self, region, whtype=None):
+#        wh = self.all().filter(_building___region=region).all()
+#        return wh
+
+
 class WarehouseBuilding(models.Model):
     _name   = models.CharField(max_length=127)
     _region = models.ForeignKey(Region)
@@ -192,41 +228,43 @@ class WarehouseBuilding(models.Model):
 
 
 
-class Warehouse(models.Model):
-    _building = models.ForeignKey(WarehouseBuilding)
-    _item   = models.ForeignKey(Item, unique=True)
+#class Warehouse(models.Model):
+#    name  = models.CharField(max_length=127)
 
-    def __str__(self):
-        return self._item
+    #    _building = models.ForeignKey(WarehouseBuilding)
+#    _item   = models.ForeignKey(Item, unique=True)
+
+#    objects = WHM()
+
+#    def __str__(self):
+#        return str(self._item)
 
 
 
-class FoodStock(Warehouse):
+#    name  = models.CharField(max_length=127)
+
 #    def __init__(self):
 #        super(Warehouse, self)._item = models.ForeignKey(Food)
 
     
-    def put(self, food_type, amount=1, age=0):
-        """ Keep in storage the given amount of food.
-            If there is food of same type with same expiry age, 
-            just add this amount to the pile. """
+#    def put(self, food_type, amount=1, age=0):
+#        """ Keep in storage the given amount of food.
+#            If there is food of same type with same expiry age, 
+#            just add this amount to the pile. """
 
-        ft = FoodType.get(pk=food_type)
+#        ft = FoodType.get(pk=food_type)
 #       expiry_date = timezone.now()\
 #               + datetime.timedelta(seconds=ft.get_shelf_life())\
 #               - datetime.timedelta(seconds=(age * MIN_FOOD_SHELF_LIFE)) * age
 #        if ROUND_TO_MINUTES:
 #            expiry_date.replace(second=0)
 #        expire_date.replace(microsecond=0)
-
-        print("Trying to add % of % to region %s" % (amount, food_type, super(self._region)))
+#
+#        print("Trying to add {0} of {1} to FoodStock of region {2}".format(amount, food_type, super(self._region)))
         
-
-    def take(self):
-        pass
-
-
-
+#
+#    def take(self):
+#        pass
 
 
 # Create your models here.
