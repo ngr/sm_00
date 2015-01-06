@@ -328,7 +328,7 @@ class Task(models.Model):
         
         self.add_yield(retr[1])
         self._retrieved = True
-        self.save()
+#        self.save()
 
         ### Saving items retrieved
         amount = round(self.get_yield())
@@ -340,7 +340,8 @@ class Task(models.Model):
             self.get_region().put_to_warehouse(item, amount)
         except ItemError:
             print("Some shit while putting item to warehouse")
-        
+
+        self.save() 
         return 
 
     def get_yield_farming(self, strict=False):
@@ -350,13 +351,11 @@ class Task(models.Model):
         Bonuses may add extra. """
 
         print("Trying to yield from farming task")
-        print("Plant is:", self.get_type().farmingtaskdirectory.get_plant())
+#        print("Plant is:", self.get_type().farmingtaskdirectory.get_plant())
         ps = self.get_type().get_primary_skill()
         ss = self.get_type().get_secondary_skill()
-        print("ps, ss =", ps, ss)
 
         print("Now task specific stuff")
-
         cummulative_result = 0
         for a in self.get_assignments():
             a.release()
@@ -377,19 +376,19 @@ class Task(models.Model):
 
             result = 0
             by = self.get_type().farmingtaskdirectory.get_plant().get_base_yield()
-            print("Base yield:", by)
+            print("Base yield: {0}".format(by))
             result += (by * (slave_skills[ps] / 100.0) * PRIMARY_SKILL_FARMING_VALUE)
-            print(slave_skills[ps])
-            print((slave_skills[ps] / 100.0) * PRIMARY_SKILL_FARMING_VALUE)
-            print("Primary skill harvested:", result)
+#            print(slave_skills[ps])
+#            print((slave_skills[ps] / 100.0) * PRIMARY_SKILL_FARMING_VALUE)
+            print("Primary skill harvested: {0}".format(result))
     
             ss_part = SECONDARY_SKILLS_FARMING_VALUE / ss.count()
 
             for s in ss:
                 if s in list(slave_skills.keys()) and slave_skills[s] > 0:
                     result += (by * (slave_skills[s] / 100.0) * ss_part)
-                    print(slave_skills[s])
-                    print((slave_skills[s] / 100.0) * ss_part)
+#                    print(slave_skills[s])
+#                    print((slave_skills[s] / 100.0) * ss_part)
                     print("Secondary skill {0} added some yield with result: {1}".format(s, result))
 
             if not strict:

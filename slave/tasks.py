@@ -7,7 +7,7 @@ from random import random
 from slave.settings import *
 
 @shared_task
-def retriever(param=None):
+def retriever(*args, **options):
     print("Finding finished tasks")
     ttr = Task.objects.get_finished()
     if len(ttr) < 1:
@@ -16,7 +16,13 @@ def retriever(param=None):
 
     print("Retrieving", ttr)
     for t in ttr:
-        t.retrieve()
+        try:
+            t.retrieve()
+        except TaskError:
+            print("ERROR! Cannot retrieve task {0}.".format(t))
 
     return "Finished"
+
+
+
 

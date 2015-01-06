@@ -1,10 +1,13 @@
 from django.db import models
 from django.db.models import Sum
+from django.utils import timezone
 from django.core.validators import MaxValueValidator, MinValueValidator
 from operator import itemgetter, attrgetter, methodcaller
+import datetime
 
-from item.models import Item, Food
+from item.models import Item #, Food
 #from item.models import Item
+
 
 from slave.helpers import *
 from slave.settings import *
@@ -112,9 +115,11 @@ class Region(models.Model):
     def __str__(self):
         return self._name
 
-    def put_to_warehouse(self, item, amount):
+    def put_to_warehouse(self, item, amount=1):
         """ This is the main entry function to put items to Region warehouses """
-        print("Putting {2} of {1} to warehouse in region {0}".format(self, item, amount))
+        wh = self.warehouse_set.last()
+        wh.put(item, amount)
+#        print("Putting {2} of {1} to warehouse {3} in region {0}".format(self, item, amount, wh))
 
 
 
@@ -207,24 +212,43 @@ class HousingDistrict(Location):
 #        return wh
 
 
-class WarehouseBuilding(models.Model):
-    _name   = models.CharField(max_length=127)
+class Warehouse(models.Model):
+#    _name   = models.CharField(max_length=127)
     _region = models.ForeignKey(Region)
-    _type   = models.CharField(max_length=127, choices=ITEM_TYPES)
+#    _name   = models.CharField(max_length=127, choices=ITEM_TYPES)
 
 # One day we shall add limit of storage available in Warehouse
 
     def __str__(self):
-        return self._name
+        return ' '.join([str(self._region), 'Warehouse'])
 
-    def get_type(self):
-        return self._type
+#    def get_type(self):
+#        return self._type
 
-    class Meta:
-        unique_together = (('_region', '_type'))
+#    class Meta:
+#        unique_together = (('_region', '_type'))
 
-#    def get_items(self):
-#        return self.warehouse_set.all()
+    def get_items(self, item):
+        return self.item_set.objects.get_items_of_type(itype=item, warehouse=self)
+
+    def put(self, item, amount=1):
+        print("Putting {2} of {1} to the warehouse {0}".format(self, item, amount))
+        
+        try:
+            i = Item.objects.get(_itype=item, _date_init=next_game_period(GAME_MONTH))
+        except:
+            i=None
+        if i:
+            print("Found {0}".format(i))
+            i.put(amount)
+        else:
+            print("Not found valid instance of {0}. Creating a new one.".format(item))
+            i = Item(_name=str(item), 
+                    _itype=item, 
+                    _amount=amount, 
+                    _date_init=next_game_period(GAME_MONTH),
+                    _warehouse=self)
+            i.save()
 
 
 

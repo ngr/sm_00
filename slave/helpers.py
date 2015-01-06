@@ -1,3 +1,6 @@
+import datetime
+from django.utils import timezone
+
 def fit_to_range_float(attr, minv='Zero', maxv='Zero'):
     """ This returns float() of either minv or maxv if
     attr is out of limits. Otherwise float() of given attribute. """
@@ -76,12 +79,30 @@ for i in range(1,101):
         level_exp_ratio.append(i)
 
 def exp_to_lev(exp, difficulty=1):
-    """ Returns current level according to given exp in skill """
+    """ Return current level according to given exp in skill """
     exp = int(float(exp))
     i = 0
     while i < len(level_exp_ratio) and exp >= level_exp_ratio[i]:
         i += 1
     return i
+
+def next_game_period(p=3600):
+    """ Return the Real time of the beginning of the next
+        Game time period. Default is 1 Real hour """ 
+    n = timezone.now()
+#    print("Now is", n)
+    H = p // 3600
+    M = p // 60
+    S = p % 60
+#    print("Period is {0} or {1}:{2}:{3}".format(p, H, M, S))
+    discard = datetime.timedelta(
+            hours=(n.hour % H if H else 0),
+            minutes=(n.minute % M if M else 0),
+            seconds=(n.second % S if S else n.second),
+            microseconds=n.microsecond)
+#    print("Discard", discard)
+    r = n - discard + datetime.timedelta(seconds=p)
+    return r
 
 
 

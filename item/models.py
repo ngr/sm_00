@@ -1,13 +1,14 @@
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 from django.core.validators import MaxValueValidator, MinValueValidator
+
+import operator
+import functools
 
 from slave.settings import *
 from slave.helpers import *
 
-
-class ItemManager(models.Manager):
-    pass
 
 class ItemDirectory(models.Model):
     """ This is the main list of all types of files. 
@@ -18,7 +19,7 @@ class ItemDirectory(models.Model):
     def __str__(self):
         return self._name
 
-    def get_type(self):
+    def get_child_types(self):
         """ Return list of types relative to ItemType """
         types = {}
         for r in self._related.all():
@@ -37,7 +38,7 @@ class ItemDirectory(models.Model):
         if len(t) == 0:
             raise AttributeError("Invalid attribute 'itype'")
 
-        child_type = getattr(self.get_type()[itype], t[0])
+        child_type = getattr(self.get_child_types()[itype], t[0])
         get_method = getattr(child_type, ('get_' + clean_string_lower(param)))
         return get_method()
 
@@ -88,12 +89,44 @@ class FoodDirectory(ItemDirectory):
     def set_shelf_life(self, time=MIN_FOOD_SHELF_LIFE):
         pass
 
+class ItemManager(models.Manager):
+    def get_items_of_type(self, itype, warehouse=None):
+        """ Return objects of type/types from warehouse.
+            itype can be a string (name of item), an ItemDirectory object,
+            or tuple/list of these mixed the way you like. 
+            If building is not specified return all of type. """
+        kwargs = {}   # Query filter Dict
+        args = []      # Query filter Q_objects here 
+
+        if isinstance(itype, (list, tuple)):
+#           print("Received multiple types", itype)
+            tmp = [Q(_itype=i) for i in itype if isinstance(i, ItemDirectory)]
+            tmp += [Q(_itype___name=i) for i in itype if isinstance(i,str)]
+#            print("TMP Q:", tmp)
+            args.append(functools.reduce(operator.or_, tmp))
+
+        elif isinstance(itype, ItemDirectory):
+#            print("Received a single ItemDirectory object")
+            kwargs['_itype'] = itype
+        elif isinstance(itype, str):
+#            print("Received a single string")
+            kwargs['_itype___name'] = itype.strip()
+
+        if not args and not kwargs:
+            raise AttributeError("No correct item types specified while calling get_items_of_type().")
+
+# FIXME! Need to check validity of building here
+        if warehouse:
+            kwargs['_warehouse'] = warehouse
+
+        return self.filter(*args, **kwargs)
+
 class Item(models.Model):
     _name    = models.CharField(max_length=127, blank=True)
     _itype   = models.ForeignKey(ItemDirectory)
     _amount  = models.PositiveIntegerField(default=1)
     _date_init = models.DateTimeField()
-    _building  = models.ForeignKey('area.WarehouseBuilding')
+    _warehouse = models.ForeignKey('area.Warehouse')
 
     objects = ItemManager()
 
@@ -143,6 +176,9 @@ class Item(models.Model):
     def get_type(self):
         return self._itype
 
+#    def get_building(self):
+#        return self._building
+
     def is_type(self, itype):
         """ Return True if item has properties of itype """
         if not isinstance(itype, str):
@@ -191,7 +227,7 @@ class Item(models.Model):
 
 
 
-class Food(Item):
+"""class Food(Item):
     _instance_date_expire = models.DateTimeField(null=True) 
     _instance_taste = models.PositiveIntegerField(default=0)
     _instance_satiety = models.PositiveIntegerField(default=0)
@@ -215,4 +251,6 @@ class Material(Item):
 
     def __str__(self):
         return ' '.join([str(self._itype), str(self._density)])
+"""
+
 
