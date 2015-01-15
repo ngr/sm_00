@@ -65,9 +65,18 @@ class AssignmentManager(models.Manager):
 class TaskManager(models.Manager):
     """ Operations on multiple Tasks """
 
-    def auth_get_task(self, owner):
-#        print(user)
-        return self.filter(_owner=owner)
+    def auth_get_task(self, owner, task=None):
+        """ Return Task or all tasks of 'owner' """
+        args = ()
+        kwargs = {}
+
+        if task:
+            kwargs['pk'] = task
+
+
+# This should be the last param
+        kwargs['_owner'] = owner
+        return self.filter(*args, **kwargs)
 
 
     def get_finished(self, ttype=None):
@@ -129,6 +138,12 @@ class TaskDirectory(models.Model):
 
     def get_exec_time(self):
         return self._exec_time
+
+    def get_min_slaves(self):
+        return self._min_slaves
+
+    def get_max_slaves(self):
+        return self._max_slaves
 
     def get_primary_skill(self):
         if self._primary_skill:
@@ -271,6 +286,10 @@ class Task(models.Model):
         return self.assignment_set.all() if not running else\
                 self.assignment_set.all().filter(_date_released__isnull=True)
 
+    def has_open_vacancy(self):
+        """ Returns if there are free working places """
+        return self.get_assignments().count() < self.get_type().get_max_slaves()
+
     def get_farming_yield_item(self):
         return self.get_type().get_param('plant').get_yield_item()
 
@@ -309,8 +328,8 @@ class Task(models.Model):
         """ Check the location type vs required one for this type of task """
         if not self.get_location().get_type() == self.get_type().get_location_type():
 #                [i[1] for i in LOCATION_TYPES if i[0] == self.get_type().get_location_type()][0]:
-            print(self.get_location().get_type())
-            print(self.get_type().get_location_type())
+#            print(self.get_location().get_type())
+#            print(self.get_type().get_location_type())
 #            print([i[1] for i in LOCATION_TYPES if i[0] == self.get_type().get_location_type()])
             raise AssignmentError("Wrong type of location")
 
@@ -457,11 +476,16 @@ class Assignment(models.Model):
 
 
     def save(self, *args, **kwargs):
+        self.clean()
         if not self._date_assigned:
             print("Setting Assignment date")
             self._date_assigned = timezone.now()
         super(Assignment, self).save(*args, **kwargs)
 
+    def clean(self):
+        """ Check if Assignment is going to be valid """
+        if not self.task.has_open_vacancy():
+            raise AssignmentError("Too many slaves for this task")
 
     def release(self):
         

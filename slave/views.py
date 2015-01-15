@@ -14,7 +14,7 @@ class IndexView(LoginRequiredMixin, generic.ListView):
 
     template_name = 'slave/index.html'
     context_object_name = 'slaves_list'
-    paginate_by = 3 
+    paginate_by = 15 
     def get_queryset(self):
 #        return Region.objects.all().get(pk=2).get_slaves()
         print(self.request.user)

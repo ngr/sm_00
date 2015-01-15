@@ -27,7 +27,7 @@ class RegionManager(models.Manager):
 
 # This should be the last param
         kwargs['_owner'] = owner
-        return self.filter(*args, **kwargs).all()
+        return self.filter(*args, **kwargs)
 
 
 

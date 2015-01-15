@@ -40,7 +40,7 @@ class SlaveManager(models.Manager):
 
 # This should be the last param
         kwargs['_owner'] = owner
-        return self.filter(*args, **kwargs).all()
+        return self.filter(*args, **kwargs)
 
 
     def spawn(self, **kwargs):
@@ -360,15 +360,15 @@ class Slave(models.Model):
 
 
     def employ(self):
-        """ Find some job for Slave """
+        """ Find some job for the Slave """
 
         if not self.is_free():
             raise TaskError("WARNING! {0} cannot be employed. Slave is busy already!".format(self))
 
         task_type = TD.objects.get(pk=choice([1,2,3]))
-        task_location = Location.objects.get(pk=1)
+        task_location = Location.objects.get(pk=10)
         
-        t = Task(_type=task_type, _location=task_location)
+        t = Task(_type=task_type, _location=task_location, _owner=self._owner)
 
         self.assign_to_task(t)
 
