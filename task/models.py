@@ -65,6 +65,11 @@ class AssignmentManager(models.Manager):
 class TaskManager(models.Manager):
     """ Operations on multiple Tasks """
 
+    def auth_get_task(self, owner):
+#        print(user)
+        return self.filter(_owner=owner)
+
+
     def get_finished(self, ttype=None):
         """ Return all finished not yet retrieved tasks """
         if not ttype:
@@ -209,6 +214,8 @@ class Task(models.Model):
     _date_finish = models.DateTimeField()
 
     _location   = models.ForeignKey('area.Location')
+
+    _owner      = models.ForeignKey('auth.User')
     _retrieved  = models.BooleanField(default=False)
 
     _yield      = models.FloatField(default=0.0)
@@ -233,6 +240,13 @@ class Task(models.Model):
 
     def get_region(self):
         return self.get_location().get_region()
+
+    def get_owner(self):
+        return self._owner
+
+    def auth_allowed(self, user):
+        """ Check permissions to access object """
+        return True if self.get_owner() == user else False
 
     def is_retrieved(self):
         return self._retrieved
@@ -459,24 +473,20 @@ class Assignment(models.Model):
 
         ps = self.task.get_primary_skill()
         ss = self.task.get_secondary_skill()
+        slave_skills = self.slave.get_available_skills()
+
         exp = int( (datetime.timedelta.total_seconds(self.get_duraton()) / GAME_DAY) * BASE_EXP_PER_DAY )
       
-        if ps in self.slave.get_available_skills():
+        if ps in slave_skills:
             print("{0} gained {1} experience for {2}".format(self.slave, exp, ps))
             self.slave.add_skill_exp(ps, exp)
 
         for s in ss:
-            if s in self.slave.get_available_skills():
+            if s in slave_skills:
                 print("{0} gained {1} experience for {2}".format(self.slave, exp, s))
                 self.slave.add_skill_exp(s, exp)
 
         self.save()
-
-
-#    def __init__(self):
-#        self._date_assigned = timezone.now()
-
-
 
 
 

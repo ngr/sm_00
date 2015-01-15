@@ -1,9 +1,12 @@
+{% extends "sm_00/index.html" %}
+
 {% block content %}
 
-    <h2>Regions</h2>
-    <ul>
+<h2>Regions</h2>
+<ul>
         {% for region in object_list %}
-        <li><a href="{% url 'area:detail' region.id %}">{{ region.name }}</a></li>
+        <li><a href="{% url 'area:detail' region.id %}">{{ region }}</a></li>
         {% endfor %}
-    </ul>
+</ul>
+    
 {% endblock %}

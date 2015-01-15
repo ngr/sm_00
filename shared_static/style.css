@@ -1,0 +1,72 @@
+body {
+    background: white url("images/background.png") no-repeat right top;
+    background-size: 30% Auto;
+}
+    
+li a {
+    color: green;
+}
+
+
+
+<!-- Skill table -->
+table.skill_table {
+    border: 1px solid #000000;
+}
+
+th.skill_th, td.skill_td {
+    text-align: left;
+    padding-left: 3px;
+    border: 1px solid #000000;
+}
+
+th.skill_th, th.skill_level_th {
+    background-color: #CC99FF;
+//    font-style: italic;
+}
+
+th.skill_level_th, td.skill_level_td {
+    text-align: center;
+    border: 1px solid #000000;
+}
+
+<!-- Task table -->
+table.task_table {
+    border: 1px solid #000000;
+}
+
+th.task_type_th, td.task_type_td {
+    text-align: left;
+    padding-left: 3px;
+    border: 1px solid #000000;
+}
+
+th.task_details_th, td.task_details_td {
+    text-align: left;
+    padding-left: 3px;
+    border: 1px solid #000000;
+}
+
+th.task_type_th, th.task_date_th, th.task_flag_th, th.task_details_th {
+    background-color: #CC99FF;
+//    font-style: italic;
+}
+
+th.task_date_th, td.task_date_td {
+    text-align: left;
+    border: 1px solid #000000;
+}
+
+th.task_flag_th, td.task_flag_td {
+    text-align: left;
+    border: 1px solid #000000;
+}
+
+.nav_element, li.nav_element a {
+    display: inline !important;
+    color: darkgreen;
+}
+
+
+
+

@@ -5,6 +5,7 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.core.files.storage import FileSystemStorage
+#from django.contrib.auth.models import User
 from slave.settings import *
 
 from skill.models import Skill, SkillTrained
@@ -25,7 +26,25 @@ class SlaveManager(models.Manager):
 
     APP_ROOT_PATH = '/var/django/sm_00/slave'
 
+    def auth_get_slave(self, owner, slave=None, withdead=False):
+        """ Return slave or all slaves of 'owner' """
+        args = ()
+        kwargs = {}
+
+        if slave:
+            kwargs['pk'] = slave
+
+        if not withdead:
+            kwargs['date_death__isnull'] = True
+
+
+# This should be the last param
+        kwargs['_owner'] = owner
+        return self.filter(*args, **kwargs).all()
+
+
     def spawn(self, **kwargs):
+        """ Spawn a new slave with random parameters but you can forse any in kwargs. """
         larva = self.create(date_birth=timezone.now())
         MIN_ATTR = 1
         MAX_ATTR = 10
@@ -160,6 +179,7 @@ class Slave(models.Model):
             validators=[MinValueValidator(0), MaxValueValidator(100)])
 
     location = models.ForeignKey(HousingDistrict, null=True)
+    _owner   = models.ForeignKey('auth.User', default=1)
 
     objects = SlaveManager()
 
@@ -177,6 +197,14 @@ class Slave(models.Model):
     def get_location(self):
         """ Return current location of Slave """
         return self.location
+
+    def get_owner(self):
+        """ Return the current owner of the Slave """
+        return self._owner
+
+    def auth_allowed(self, user):
+        """ Check if user is owner. More complex access rights to be developed. """
+        return self.get_owner() == user
 
     def is_baby(self):
         return timezone.now() - datetime.timedelta(seconds=(GAME_YEAR * BABY_AGE))\
@@ -200,6 +228,12 @@ class Slave(models.Model):
 
     def is_alive(self):
         return self.date_birth <= timezone.now() and not self.date_death
+
+    def get_age(self):
+        if self.date_death is not None:
+            return int((self.date_death - self.date_birth).total_seconds() // GAME_YEAR)
+        else:
+            return int((timezone.now() - self.date_birth).total_seconds() // GAME_YEAR)
 
 #    def get_skills(self, *args):
     """ Returns the current skill level on requested skills.
@@ -365,4 +399,3 @@ class Parents(models.Model):
     """ This model keeps track of parent relationships. """ 
     child = models.ManyToManyField(Slave)
     parent = models.ManyToManyField(Slave, related_name='parent')
-

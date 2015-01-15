@@ -17,18 +17,38 @@ from slave.settings import *
 class RegionManager(models.Manager):
     """ The main interface to operate Regions and locations """
 
+    def auth_get_region(self, owner, region=None):
+        """ Return region or all regions of 'owner' """
+        args = ()
+        kwargs = {}
+
+        if region:
+            kwargs['pk'] = region
+
+# This should be the last param
+        kwargs['_owner'] = owner
+        return self.filter(*args, **kwargs).all()
+
 
 
 class Region(models.Model):
     _name = models.CharField(max_length=127)
     area = models.BigIntegerField(default=1, validators=[MinValueValidator(1)])
-    owner = 1
+    _owner = models.ForeignKey('auth.User')
 
     objects = RegionManager()
 
     def get_free_area(self):
         """ Return free area not assigned to locations """
         return self.area - self.location_set.all().aggregate(Sum('area'))['area__sum']
+
+    def get_owner(self):
+        """ Return the current owner of the Region """
+        return self._owner
+
+    def auth_allowed(self, user):
+        """ Check permissions to access object """
+        return self.get_owner() == user
 
     def get_slaves(self, withdead=False, free=False, by_districts=False):
         """ List of slaves currently living in HousingDistricts of the Region """

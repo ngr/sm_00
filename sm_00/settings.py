@@ -10,6 +10,10 @@ https://docs.djangoproject.com/en/1.7/ref/settings/
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
+SETTINGS_DIR = os.path.dirname(__file__)
+PROJECT_PATH = os.path.join(SETTINGS_DIR, os.pardir)
+PROJECT_ROOT = os.path.abspath(PROJECT_PATH)
+
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
@@ -52,6 +56,8 @@ INSTALLED_APPS = (
     'task',
     'area',
     'item',
+    'sm_00',
+    'talk',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -62,7 +68,18 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'talk.middleware.RequireLoginMiddleware',
 )
+
+LOGIN_REQUIRED_URLS = (
+    r'/talk/(.*)$',  # TODO interpret this regex.
+)
+LOGIN_REQUIRED_URLS_EXCEPTIONS = (
+    r'/login(.*)$',
+    r'/logout(.*)$',
+    r'/staff(.*)$',
+)
+
 
 ROOT_URLCONF = 'sm_00.urls'
 
@@ -112,7 +129,10 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "static/")
-
+#print(STATIC_ROOT)
+STATICFILES_DIRS = (
+    '/var/django/sm_00/shared_static',
+)
 
 # CELERY SETTINGS
 BROKER_URL = 'redis://localhost:6379/0'
@@ -121,3 +141,5 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 
 
+# Authorization and Authentication
+LOGIN_REDIRECT_URL = '/'

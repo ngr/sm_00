@@ -1,0 +1,22 @@
+<html>
+<head>
+    <title>{% block title %}{{ section.title }}{% endblock %}</title>
+    {% load staticfiles %}
+    <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}" />
+
+</head>
+
+<body>
+    {% load nav %}
+        {% block navigation %}
+            {% if user.is_authenticated %}
+                {% show_nav %}
+            {% else %}
+                {% guest_show_nav %}
+            {% endif %}
+        {% endblock navigation %}
+
+        {% block content %}
+        {% endblock content %}
+</body>
+</html>

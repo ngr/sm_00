@@ -19,6 +19,9 @@ class ItemDirectory(models.Model):
     def __str__(self):
         return self._name
 
+    def get_related(self):
+        return self._related.all()
+
     def get_child_types(self):
         """ Return list of types relative to ItemType """
         types = {}
@@ -30,9 +33,10 @@ class ItemDirectory(models.Model):
 
     def get_param(self, itype, param):
         """ Return the requested 'param' of 'itype' child """
+#        print("Looking for {1} param {0} in ItemDirectory instance {2}".format(param, itype, self))
         if not isinstance(itype, str) or not isinstance(param, str):
-            raise TypeError("Attributes should be strings")
-
+            raise TypeError("Attributes for ItemDirectory.get_param() should be strings")
+ 
         itype = clean_string_title(itype)
         t = [k[0] for k in ITEM_TYPES if k[1] == itype]
         if len(t) == 0:
@@ -40,6 +44,7 @@ class ItemDirectory(models.Model):
 
         child_type = getattr(self.get_child_types()[itype], t[0])
         get_method = getattr(child_type, ('get_' + clean_string_lower(param)))
+#        print("We use method: {0}".format(get_method))
         return get_method()
 
     def is_core(self):
@@ -133,6 +138,20 @@ class Item(models.Model):
     def __str__(self):
         return self._name
 
+    def get_type(self):
+        return self._itype
+
+    def get_amount(self):
+        """ Return the amount of items left in pile """
+        return self._amount
+
+    def get_date_init(self):
+        return self._date_init
+
+    def get_warehouse(self):
+        return self._warehouse
+
+#########################################
     def put(self, amount=1):
         """ Increase amount of Item by amount. We assume that all rules are already checked. """
         if not isinstance(amount, int):
@@ -169,15 +188,6 @@ class Item(models.Model):
     def destroy(self):
         pass
 
-    def get_amount(self):
-        """ Return the amount of items left in pile """
-        return self._amount
-
-    def get_type(self):
-        return self._itype
-
-#    def get_building(self):
-#        return self._building
 
     def is_type(self, itype):
         """ Return True if item has properties of itype """
@@ -190,40 +200,30 @@ class Item(models.Model):
         return False
 
 
-    def get_param(self, param, itype=None, base=True, extra=True):
+    def get_param(self, param, itype=None, base=True):
         """ Return the requested default 'param' with Item instance specific extra """
-        if not isinstance(itype, str) or not isinstance(param, str):
+        if not isinstance(itype, str)  and not isinstance(param, str):
             raise TypeError("Attributes should be strings")
-
-        if not hasattr(self, clean_string_lower(itype)):
-            raise AttributeError("Item has no properties of itype")
+#        print("Looking for {0} param {1} of instance {2}".format(itype, param, self))
 
         if base:
             try: 
-                base_value = self._itype.get_param(itype, param)
+                base_value = self.get_type().get_param(itype, param)
             except AttributeError:
                 base_value = None
-
-        if extra:
-            try:
-                child = getattr(self, clean_string_lower(itype))
-                extra_value = child.get_extra(clean_string_lower(param))
-            except AttributeError:
-                extra_value = None
+#        print("Base:", base_value)
 
         if base_value is not None:
-            if extra_value is not None:
-                if type(base) == type(extra):
-                    return base_value + extra_value
-                else:
-                    raise TypeError("Wrond types in DB")
-            else:
-                return base_value
+            return base_value
         else:
-            if extra_value is not None:
-                return extra_value
-            else:
-                raise AttributeError("Item does not have requested param")
+            raise AttributeError("Item does not have requested param")
+
+
+class ItemJoffreyList(models.Model):
+    """ This is a queue for execution of items for any automatic reasons (expiration) """
+    item        = models.ForeignKey(Item, unique=True)
+    execution_time   = models.DateTimeField()
+    reason      = models.CharField(max_length=255, blank=True)
 
 
 

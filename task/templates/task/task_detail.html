@@ -1,3 +1,6 @@
+{% extends "sm_00/index.html" %}
+{% block content %}
+{% if task %}
 <link rel="stylesheet" href="{{ STATIC_URL }}django_tables2/themes/paleblue/css/screen.css" />
 
 <h1>Deatails of task: {{ task.id }}</h1>
@@ -38,22 +41,26 @@
     <table class='paleblue'>
     <thead>
         <tr>
-           <th>Started</th>
+           <th>Assigned</th>
+           <th>Released</th>
            <th>Slave</th>
-           <th>Active</th>
-            <th>Estimated yield</th>
+            <th>Running</th>
         </tr>
     </thead>
     <tbody>
         {% for v  in assignments %}
         <tr>
             <td>{{ v.get_date_assigned }} </td>
+            <td>{{ v.get_date_released }} </td>
             <td>{{ v.get_slave }} </td>
             <td>{{ v.is_running }} </td>
-            <td>{{ v.get_estimated_yield }} </td>
         </tr>
         {% endfor %}
     </tbody>
-    </table>
+</table>
 
+{% else %}
+    <h2>Wrong task ID!</h2>
+{% endif %}
 
+{% endblock content %}

@@ -1,5 +1,14 @@
+{% extends "sm_00/index.html" %}
+{% block content %}
 {% load staticfiles %}
+
 <link rel="stylesheet" type="text/css" href="{% static 'slave/style.css' %}" />
+<script type="text/javascript" src="{% static 'scripts/main.js' %}">alert_me();</script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <!-- Foundation & FontAwesome -->
+    <link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/foundation/5.2.3/css/foundation.css">
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/trianglify/0.1.2/trianglify.min.js"></script>
 
 <h1>{{ slave.name }}</h1>
 
@@ -7,10 +16,12 @@
 
 <ul>
     <li>Slave was born: {{ slave.date_birth }}</li>
-    <li>Slave died: {{ slave.date_death }}</li>
+    <li>Slave is alive: {{ slave.is_alive }}</li>
+    <li> Age: {{ slave.get_age }}</li>
     <li>Is a kid: {{ slave.is_child }}</li>
     <li>Is a adult: {{ slave.is_adult }}</li>
     <li>Slave Sex: {{ slave.sex }}</li>
+    <li>Idle: {{ slave.is_free }}</li>
 </ul>
 
 <h3>Trained Skills</h3>
@@ -44,7 +55,53 @@
         <input type="submit" value="Boost skill" />
 </form>
 
+{% if slave.is_free %}
+###############
+<br><br>
+<div class="row white">
+    <div class="large-12 columns">
+        <a href="/logout" class="right">Logout</a>
+        <h2>Hi, {{request.user.username}}</h2>
+    </div>
+</div>
+<div class="row white">
+    <div class="columns large-12">
+        <form action="create_post/" method="POST">
+            {% csrf_token %}
+            <div class="fieldWrapper">
+                {{ form.text }}
+            </div>
+            <input type="submit" value="Post" class="tiny button">
+        </form>
+    </div>
+</div>
 
+<!-- The feed -->
+<div class="row white">
+    <div class="columns large-12">
+        <ul>
+            {% for post in all_posts %}
+                <li>
+                    <strong>{{ post.text }}</strong> -
+                    <em>{{ post.author }}</em> -
+                    <span>{{ post.created }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+
+
+<br><br>##############<br><br>
+<form action="{% url 'slave:assign_task' slave.id %}" method="post">
+    {% csrf_token %}
+        {{ assign_form }}
+        <input type="submit" value="Submit" />    
+</form>
+{% endif %}
+
+<h3>Assignments</h3>
 <table class="task_table" width="800px">
     <tr>
         <th class="task_type_th">Type</th>
@@ -55,16 +112,14 @@
         <th class="task_flag_th">Retrieved</th>
 
     </tr>
-    {% for task in slave.task_set.all %}
+    {% for task in slave.assignment_set.all %}
     <tr>
-        <td class="task_type_td">{{ task.get_type }}</td>
-        <td class="task_details_td">
-            {% if task.get_type == 'Farming' %}{{task.farming.get_specific_details }}{% endif %}
-        </td>
-        <td class="task_date_td">{{ task.date_start }}</td>
-        <td class="task_date_td">{{ task.date_finish }}</td>
-        <td class="task_flag_td">{{ task.is_finished }}</td>
-        <td class="task_flag_td">{{ task.retrieved }}</td>
+        <td class="task_type_td">{{ task.get_task.get_type }}</td>
+        <td class="task_details_td"></td>
+        <td class="task_date_td">{{ task.get_date_assigned}}</td>
+        <td class="task_date_td">{{ task.get_date_released }}</td>
+        <td class="task_flag_td">{{ task.get_task.is_finished }}</td>
+        <td class="task_flag_td">{{ task.get_task.is_retrieved }}</td>
     </tr>
     {% endfor %}
 </table>
@@ -84,4 +139,5 @@
     <label>Current {{ slave.happiness }}</label><br />
 <input type="submit" value="Make Happy" />
 </form>
+{% endblock content %}
 

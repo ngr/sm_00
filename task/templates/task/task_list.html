@@ -1,6 +1,7 @@
+{% extends "sm_00/index.html" %}
+
 {% load staticfiles %}
 {% load render_table from django_tables2 %}
-
 
 {% block content %}
 <link rel="stylesheet" href="{{ STATIC_URL }}django_tables2/themes/paleblue/css/screen.css" />
@@ -16,8 +17,6 @@
 
 <h2>All tasks</h2>
 {% render_table tasks_all %}
-
-
 
 {% endblock %}
 

@@ -1,5 +1,9 @@
-<h1>Deatails of region: {{ region.name }}</h1>
+{% extends "sm_00/index.html" %}
+{% block content %}
+{% if region %}
+<h1>Deatails of region: {{ region }}</h1>
 
+    {% if housing %}
     <h2>Locations:</h2>
     <ul>
         {% for loc, prop in housing.items %}
@@ -11,7 +15,9 @@
         </ul>
         {% endfor %}
     </ul>
+    {% endif %}
 
+    {% if farming %}
     <h2>Farming Fields</h2>
     <ul>
         {% for loc, prop in farming.items %}
@@ -23,16 +29,19 @@
         </ul>
         {% endfor %}
     </ul>
+    {% endif %}
 
+    {% if inhabitants %}
     <h2>Inhabitants</h2>
-<ul>
-    {% for district, slaves in inhabitants.items %}
-    <li>{{ district.get_name }}</li>
     <ul>
-        {% for sl in slaves %} 
-        <li><a href="{% url 'slave:detail' sl.pk %}"> {{sl }}</a> - {{sl.get_age}}</li>
+        {% for sl in inhabitants %}
+            <li><a href="{% url 'slave:detail' sl.pk %}"> {{sl }}</a> - {{sl.get_age}}</li>
         {% endfor %}
     </ul>
-    {% endfor %}
-</ul>
+    {% endif %}
 
+{% else %}
+    <h2>Wrong region ID!</h2>
+{% endif %}
+
+{% endblock content %}

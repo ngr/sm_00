@@ -1,0 +1,15 @@
+{% block navigation %}
+
+{% load nav %}
+{% get_navigation_buttons as buttons %}
+<ul>
+    {% for b in buttons %}
+    <li class="nav_element">
+        <a href="{{ b.url }}">{{ b.value }}</a>
+    </li>
+    {% empty %}
+        Navigation to be loaded here
+    {% endfor %}
+</ul>
+{% endblock navigation %}
+
