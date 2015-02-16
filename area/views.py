@@ -33,8 +33,9 @@ class RegionDetail(LoginRequiredMixin, generic.DetailView):
 
         context['housing'] = self.region.get_housing() 
         context['farming']   = self.region.get_farming_areas()
-
         context['inhabitants'] = self.region.get_slaves(withdead=False)
+
+        context['items'] = self.region.get_item_list()
         return context
 
 

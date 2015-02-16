@@ -3,6 +3,15 @@
 {% if region %}
 <h1>Deatails of region: {{ region }}</h1>
 
+    {% if items %}
+    <h2>Items</h2>
+    <ul>
+        {% for item in items %}
+            <li>{{ item }}: {{ item.get_amount }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
     {% if housing %}
     <h2>Locations:</h2>
     <ul>
@@ -39,6 +48,7 @@
         {% endfor %}
     </ul>
     {% endif %}
+
 
 {% else %}
     <h2>Wrong region ID!</h2>

@@ -95,7 +95,7 @@ class FoodDirectory(ItemDirectory):
         pass
 
 class ItemManager(models.Manager):
-    def get_items_of_type(self, itype, warehouse=None):
+    def get_items_of_type(self, itype=None, warehouse=None):
         """ Return objects of type/types from warehouse.
             itype can be a string (name of item), an ItemDirectory object,
             or tuple/list of these mixed the way you like. 
@@ -103,27 +103,31 @@ class ItemManager(models.Manager):
         kwargs = {}   # Query filter Dict
         args = []      # Query filter Q_objects here 
 
-        if isinstance(itype, (list, tuple)):
-#           print("Received multiple types", itype)
-            tmp = [Q(_itype=i) for i in itype if isinstance(i, ItemDirectory)]
-            tmp += [Q(_itype___name=i) for i in itype if isinstance(i,str)]
-#            print("TMP Q:", tmp)
-            args.append(functools.reduce(operator.or_, tmp))
+        if itype is not None:
+            if isinstance(itype, (list, tuple)):
+#               print("Received multiple types", itype)
+                tmp = [Q(_itype=i) for i in itype if isinstance(i, ItemDirectory)]
+                tmp += [Q(_itype___name=i) for i in itype if isinstance(i,str)]
+#                   print("TMP Q:", tmp)
+                args.append(functools.reduce(operator.or_, tmp))
 
-        elif isinstance(itype, ItemDirectory):
-#            print("Received a single ItemDirectory object")
-            kwargs['_itype'] = itype
-        elif isinstance(itype, str):
-#            print("Received a single string")
-            kwargs['_itype___name'] = itype.strip()
-
-        if not args and not kwargs:
-            raise AttributeError("No correct item types specified while calling get_items_of_type().")
+            elif isinstance(itype, ItemDirectory):
+#                print("Received a single ItemDirectory object")
+                kwargs['_itype'] = itype
+            elif isinstance(itype, str):
+#                print("Received a single string")
+                kwargs['_itype___name'] = itype.strip()
+            else:
+                raise AttributeError("Invalid itypes for get_items_of_type()")
 
 # FIXME! Need to check validity of building here
         if warehouse:
             kwargs['_warehouse'] = warehouse
 
+        if not args and not kwargs:
+            raise AttributeError("Valid itype or warehouse is required for get_items_of_type().")
+
+        print(self.filter(*args, **kwargs))
         return self.filter(*args, **kwargs)
 
 class Item(models.Model):

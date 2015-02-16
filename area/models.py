@@ -5,7 +5,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from operator import itemgetter, attrgetter, methodcaller
 import datetime
 
-from item.models import Item #, Food
+from item.models import Item, ItemManager #, Food
 #from item.models import Item
 
 
@@ -135,11 +135,32 @@ class Region(models.Model):
     def __str__(self):
         return self._name
 
+
     def put_to_warehouse(self, item, amount=1):
         """ This is the main entry function to put items to Region warehouses """
         wh = self.warehouse_set.last()
         wh.put(item, amount)
 #        print("Putting {2} of {1} to warehouse {3} in region {0}".format(self, item, amount, wh))
+
+    def get_item_list(self, itype=None):
+        """ Return items from region warehouses """
+        # Accumulate info to result
+        result = []
+        # Get items from each Warehouse
+        for warehouse in self.warehouse_set.all():
+            print(warehouse)
+            new_item = warehouse.get_item_list(itype)
+        # Function can return a single object or a list
+            print(type(new_item))
+            if isinstance(new_item, (list, tuple)):
+                result.extend(new_item)
+            elif isinstance(new_item, Item):
+                result.append(new_item)
+
+        # FIXME process result to accumulate similar items from different warehouses
+        # return processed result
+        print(result)
+        return result
 
 
 
@@ -248,8 +269,13 @@ class Warehouse(models.Model):
 #    class Meta:
 #        unique_together = (('_region', '_type'))
 
-    def get_items(self, item):
-        return self.item_set.objects.get_items_of_type(itype=item, warehouse=self)
+    def get_item_list(self, itype):
+#        print(" ".join(["itype for area.Warehouse.get_item_list() is:", str(itype)]))
+        return list(Item.objects.get_items_of_type(itype=itype, warehouse=self))
+
+
+
+        #return self.item_set.objects.get_items_of_type(itype=itype, warehouse=self)
 
     def put(self, item, amount=1):
         print("Putting {2} of {1} to the warehouse {0}".format(self, item, amount))

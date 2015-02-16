@@ -14,6 +14,7 @@ urlpatterns = patterns('',
     url(r'^accounts/login/$', 'django.contrib.auth.views.login'),
     url(r'^accounts/logout/$', 'django.contrib.auth.views.logout', {'next_page': '/'}),
     url(r'^talk/', include('talk.urls', namespace='talk')),
+    url(r'^item/', include('item.urls', namespace='item')),
 #    url(r'^accounts/logout/$', views.LogoutView.as_view(), name='logout'),
 
 )

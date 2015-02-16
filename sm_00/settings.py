@@ -58,6 +58,7 @@ INSTALLED_APPS = (
     'item',
     'sm_00',
     'talk',
+    'rest_framework',
 )
 
 MIDDLEWARE_CLASSES = (
