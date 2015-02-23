@@ -97,9 +97,10 @@ class TaskManager(models.Manager):
 class TaskDirectory(models.Model):
     _name   = models.CharField(max_length=127)
     _location_type = models.CharField(max_length=127, choices=LOCATION_TYPES, blank=True)
+    _area_per_worker = models.PositiveIntegerField(default=1)
 
-    _exec_time  = models.PositiveIntegerField(null=True)
-    _exec_work  = models.PositiveIntegerField(null=True)
+#    _exec_time  = models.PositiveIntegerField(null=True)
+#    _exec_work  = models.PositiveIntegerField(null=True)
 
     _min_slaves = models.PositiveIntegerField(default=1)
     _max_slaves = models.PositiveIntegerField(default=1)
@@ -121,13 +122,13 @@ class TaskDirectory(models.Model):
                     return t[0]
         return False
 
-    def is_time_fixed(self):
-        """ The task is executed some fixed time """
-        return self._exec_time is not Null
+#    def is_time_fixed(self):
+#        """ The task is executed some fixed time """
+#        return self._exec_time is not Null
 
-    def is_work_fixed(self):
-        """ The task needs some fixed work to be done """
-        return self._exec_work is not Null
+#    def is_work_fixed(self):
+#        """ The task needs some fixed work to be done """
+#        return self._exec_work is not Null
 
     def get_param(self, param):
         """ Return the requested 'param' of 'itype' child """
@@ -145,11 +146,15 @@ class TaskDirectory(models.Model):
         get_method = getattr(child_type, ('get_' + clean_string_lower(param)))
         return get_method()
 
+    """ Basic get() methods for TaskDirectory instance properties """
     def get_location_type(self):
         return self._location_type
 
-    def get_exec_time(self):
-        return self._exec_time
+    def get_area_per_worker(self):
+        return self._area_per_worker
+
+#    def get_exec_time(self):
+#        return self._exec_time
 
     def get_min_slaves(self):
         return self._min_slaves
@@ -171,13 +176,32 @@ class TaskDirectory(models.Model):
 
 
 class FarmingTaskDirectory(TaskDirectory):
-    from task.farming import Plant
+#   from task.farming import Plant
+#    _primary_skill = models.ForeignKey('skill.Skill', related_name='+')
+#    _secondary_skill   = models.ManyToManyField('skill.Skill', related_name='+')
 
-    _plant = models.ForeignKey('Plant')
+    _yield_item  = models.ForeignKey('item.ItemDirectory')
+    _base_yield  = models.PositiveSmallIntegerField(default=1)
+    _exec_time   = models.PositiveSmallIntegerField(default=1)
+
+    """ Basic get() methods for FarmingTaskDirectory properties. """
+#    def get_primary_skill(self):
+#        return self._primary_skill
+
+#    def get_secondary_skill(self):
+#        return self._secondary_skill
+
+    def get_yield_item(self):
+        return self._yield_item
+
+    def get_base_yield(self):
+        return self._base_yield
+
+    def get_exec_time(self):
+        return self._exec_time
 
 
-    def get_plant(self):
-        return self._plant
+
 #############
 # We put yeild methods to this class as far as they are specific to task types
 # This might be a bad idea, but it is specified.
@@ -189,7 +213,6 @@ class FarmingTaskDirectory(TaskDirectory):
         Bonuses may add extra. """
 
         print("Trying to yield from farming task")
-        print("Plant is:", self.get_plant())
         ps = self.get_primary_skill()
         ss = self.get_secondary_skill()
         print("ps, ss =", ps, ss)
@@ -214,7 +237,7 @@ class FarmingTaskDirectory(TaskDirectory):
                  return 0
 
         result = 0
-        by = self.plant.base_yield
+        by = self.get_base_yield()
         print("Base yield:", by)
         result += (by * (slave_skills[ps] / 100.0) * PRIMARY_SKILL_FARMING_VALUE)
         print("Primary skill harvested:", result)
@@ -229,7 +252,7 @@ class FarmingTaskDirectory(TaskDirectory):
             result += (result * (randrange(-YIELD_RANDOMIZER, YIELD_RANDOMIZER) / 100.0))
 
 
-        return (self.plant.get_yield_type(), result)
+        return (self.get_yield_type(), result)
 
 
 
@@ -300,7 +323,7 @@ class Task(models.Model):
 
     def has_open_vacancy(self):
         """ Returns if there are free working places """
-        return self.get_assignments().count() < self.get_type().get_max_slaves()
+        return self.get_assignments(running=True).count() < self.get_type().get_max_slaves()
 
     def get_farming_yield_item(self):
         return self.get_type().get_param('plant').get_yield_item()
@@ -396,7 +419,6 @@ class Task(models.Model):
         Bonuses may add extra. """
 
         print("Trying to yield from farming task")
-#        print("Plant is:", self.get_type().farmingtaskdirectory.get_plant())
         ps = self.get_type().get_primary_skill()
         ss = self.get_type().get_secondary_skill()
 
@@ -498,6 +520,14 @@ class Assignment(models.Model):
         """ Check if Assignment is going to be valid """
         if not self.task.has_open_vacancy():
             raise AssignmentError("Too many slaves for this task")
+
+        # Check if there is enough free space for this worker and reserve this space for him
+        area_per_worker = self.task.get_type().get_area_per_worker()
+
+        if not self.task.get_location().farmingfield.get_free_area() >= area_per_worker:
+            raise AssignmentError("Not enough free space in Location")
+        else:
+            self.task.get_location().farmingfield.use_area(area_per_worker)
 
     def release(self):
         

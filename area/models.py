@@ -204,10 +204,27 @@ class Location(models.Model):
         return ' '.join([self.get_name(), '-', format(self._area, ',d'), 'm2'])
     
 class FarmingField(Location):
+    """ Farming tasks are performed in this Locations. """
+    _area_used = models.PositiveIntegerField(default=0)
+
+    def get_free_area(self):
+        """ Returns amount of unused area in Location to determine if Task can be created here. """
+        return self._area - self._area_used
+
+    def use_area(self, amount):
+        """ Reserves area for some Task. """
+        if not amount <= self.get_free_area():
+            return False
+
+        self._area_used -= amount
+        return True
+
     def get_bonus_yield(self):
+        """ This to be done later """
         return False
 
 class HousingDistrict(Location):
+    """ Required living area for Slaves. Actually represents a building. """
 
 #    def add_inhabitant(self, number=1):
 #        """ Add 'number' of new inhabitants to housing district if fit """
