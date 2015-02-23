@@ -5,9 +5,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from operator import itemgetter, attrgetter, methodcaller
 import datetime
 
-from item.models import Item, ItemManager #, Food
-#from item.models import Item
-
+from item.models import Item
 
 from slave.helpers import *
 from slave.settings import *

@@ -98,12 +98,16 @@ class TaskDirectory(models.Model):
     _name   = models.CharField(max_length=127)
     _location_type = models.CharField(max_length=127, choices=LOCATION_TYPES, blank=True)
 
-    _exec_time  = models.PositiveIntegerField(default=1)
+    _exec_time  = models.PositiveIntegerField(null=True)
+    _exec_work  = models.PositiveIntegerField(null=True)
+
     _min_slaves = models.PositiveIntegerField(default=1)
     _max_slaves = models.PositiveIntegerField(default=1)
 
     _primary_skill = models.ForeignKey('skill.Skill', related_name='+')
     _secondary_skill   = models.ManyToManyField('skill.Skill', related_name='+')
+
+    # FIXME Need some Meta here for exec_time or exec_work to be null. Not together.
 
     def __str__(self):
         return self._name
@@ -116,6 +120,14 @@ class TaskDirectory(models.Model):
                     print("The type of task is", t[1], t[0])
                     return t[0]
         return False
+
+    def is_time_fixed(self):
+        """ The task is executed some fixed time """
+        return self._exec_time is not Null
+
+    def is_work_fixed(self):
+        """ The task needs some fixed work to be done """
+        return self._exec_work is not Null
 
     def get_param(self, param):
         """ Return the requested 'param' of 'itype' child """

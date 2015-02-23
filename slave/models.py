@@ -359,11 +359,16 @@ class Slave(models.Model):
         Assignment.objects.assign(slave=self, task=task)
 
 
-    def employ(self):
-        """ Find some job for the Slave """
+    def employ(self, task_type=None):
+        """ Find job for the Slave. If task_type not given, then add some preferences. """
 
         if not self.is_free():
             raise TaskError("WARNING! {0} cannot be employed. Slave is busy already!".format(self))
+
+        # If task type is set
+            # Find if there are open tasks of type in region
+
+        # else Looking for some slave preferences
 
         task_type = TD.objects.get(pk=choice([1,2,3]))
         task_location = Location.objects.get(pk=10)

@@ -87,7 +87,12 @@ class STManager(models.Manager):
 
     def get_skill_level(self, slave, skill):
         """ Returns the current skill level of slave """
-        st = SkillTrained.objects.filter(slave=slave, skill=skill)
+        if isinstance(skill, Skill):
+            st = SkillTrained.objects.filter(slave=slave, skill=skill)
+        elif isinstance(skill, str):
+            print("Looking for string")
+            st = SkillTrained.objects.filter(slave=slave, skill__name=skill)
+
         return exp_to_lev(st.get().exp) if st else 0
     
     def use_skill(self, slave, skill, bonus=0):
