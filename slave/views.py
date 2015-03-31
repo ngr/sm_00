@@ -45,7 +45,7 @@ def make_happy(request, sid):
 
 def set_skill(request, sid):
     p = get_object_or_404(Slave, pk=sid)
-    p.set_skill(request.POST['skill'], request.POST['exp'])
+    p.add_skill_exp(int(request.POST['skill']), int(request.POST['exp']))
     return HttpResponseRedirect(reverse('slave:results', args=(p.id,)))
 
 def assign_task(request, sid):

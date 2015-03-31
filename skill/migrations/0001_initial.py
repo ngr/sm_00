@@ -8,18 +8,18 @@ import django.core.validators
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('slave', '0022_auto_20141212_0742'),
+        ('slave', '0001_initial'),
     ]
 
     operations = [
         migrations.CreateModel(
             name='Skill',
             fields=[
-                ('id', models.AutoField(primary_key=True, auto_created=True, verbose_name='ID', serialize=False)),
+                ('id', models.AutoField(serialize=False, auto_created=True, primary_key=True, verbose_name='ID')),
                 ('name', models.CharField(max_length=127)),
                 ('primary_attribute', models.PositiveSmallIntegerField(choices=[(0, 'Intelligence'), (1, 'Strength'), (2, 'Agility'), (3, 'Charisma')])),
                 ('difficulty', models.PositiveSmallIntegerField(default=1)),
-                ('required_skills', models.ManyToManyField(to='skill.Skill')),
+                ('required_skills', models.ManyToManyField(to='skill.Skill', null=True)),
             ],
             options={
             },
@@ -28,13 +28,17 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='SkillTrained',
             fields=[
-                ('id', models.AutoField(primary_key=True, auto_created=True, verbose_name='ID', serialize=False)),
-                ('level', models.PositiveSmallIntegerField(validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(100)], default=1)),
+                ('id', models.AutoField(serialize=False, auto_created=True, primary_key=True, verbose_name='ID')),
+                ('exp', models.PositiveIntegerField(default=1, validators=[django.core.validators.MinValueValidator(0)])),
                 ('skill', models.ForeignKey(to='skill.Skill')),
                 ('slave', models.ForeignKey(to='slave.Slave')),
             ],
             options={
             },
             bases=(models.Model,),
+        ),
+        migrations.AlterUniqueTogether(
+            name='skilltrained',
+            unique_together=set([('slave', 'skill')]),
         ),
     ]

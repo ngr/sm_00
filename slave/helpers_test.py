@@ -5,8 +5,8 @@ import datetime
 from random import random
 
 from slave.models import Slave, SlaveManager, RaceDefaults
-from skill.models import Skill, SkillTrained
-from task.farming import Plant
+#from skill.models import Skill, SkillTrained
+#from task.farming import Plant
 
 from slave.settings import *
 

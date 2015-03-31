@@ -7,7 +7,7 @@
 {% if slaves_list %}
     <ul>
     {% for slave in slaves_list %}
-        <li><a href="{% url 'slave:detail' slave.id  %}">{{ slave.name }}</a></li>
+        <li><a href="{% url 'slave:detail' slave.id  %}">{{ slave.get_name }}</a></li>
     {% endfor %}
 </ul>
     {% if is_paginated %}

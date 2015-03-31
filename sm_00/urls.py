@@ -15,6 +15,11 @@ urlpatterns = patterns('',
     url(r'^accounts/logout/$', 'django.contrib.auth.views.logout', {'next_page': '/'}),
     url(r'^talk/', include('talk.urls', namespace='talk')),
     url(r'^item/', include('item.urls', namespace='item')),
-#    url(r'^accounts/logout/$', views.LogoutView.as_view(), name='logout'),
+
+    url(r'^api/', include('sm_00.apiurls', namespace='api')),
+
+    url(r'^users/$', views.UserList.as_view()),
+    url(r'^users/(?P<pk>[0-9]+)/$', views.UserDetail.as_view()),
+
 
 )

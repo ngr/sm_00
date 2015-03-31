@@ -1,5 +1,6 @@
 import datetime
 from django.utils import timezone
+from random import randrange, choice
 
 def fit_to_range_float(attr, minv='Zero', maxv='Zero'):
     """ This returns float() of either minv or maxv if
@@ -29,11 +30,12 @@ def validate_in_range_float(attr, minv='Zero', maxv='Zero'):
             maxv = float(maxv)
             if maxv < minv:
                 minv, maxv = maxv, minv
-            if attr > maxv:
-                return False
+            return False if attr > maxv or attr < minv else True
         else:
             return False if attr < minv else True
-    return True
+    if maxv != 'Zero':
+        return attr < maxv
+    return None
 
 
 def validate_in_range_int(attr, minv='Zero', maxv='Zero'):
@@ -45,11 +47,12 @@ def validate_in_range_int(attr, minv='Zero', maxv='Zero'):
             maxv = int(float(maxv))
             if maxv < minv:
                 minv, maxv = maxv, minv
-            if attr > maxv:
-                return False
+            return False if attr > maxv or attr < minv else True
         else:
             return False if attr < minv else True
-    return True
+    if maxv != 'Zero':
+        return attr < maxv
+    return None
 
 def fit_to_range_int(attr, minv='Zero', maxv='Zero'):
     """ This returns int() of either minv or maxv if 
@@ -115,7 +118,13 @@ def clean_string_lower(attr):
 def clean_string_upper(attr):
     return str(attr).strip().upper()
 
-
+def random_line(afile):
+    """ Returns a random line from given afile """
+    line = next(afile)
+    for num, aline in enumerate(afile):
+        if randrange(num + 2): continue
+        line = aline
+    return line
 
 
 

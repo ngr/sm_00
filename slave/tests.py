@@ -1,6 +1,10 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from django.core.urlresolvers import reverse
+from django.contrib.auth.models import (
+    BaseUserManager, AbstractBaseUser
+)
+
 import datetime
 from random import random
 
@@ -29,7 +33,7 @@ class ParentsTests(TestCase):
 
 
 class SlaveManagerTests(TestCase):
-    attribs = ['strength', 'intelligence', 'agility', 'charisma']
+    attribs = ['_strength', '_intelligence', '_agility', '_charisma']
     
     def test_is_default_race_overriden(self):
         atr = {'race': 1}
@@ -52,31 +56,177 @@ class SlaveManagerTests(TestCase):
         By the way checks if non-default name can be specified """
         test_name = str(random())
         s = Slave.objects.spawn(**{'name':test_name})
-        self.assertEqual(Slave.objects.all().filter(name=test_name)[0].is_alive(), True)
+        self.assertEqual(Slave.objects.all().filter(_name=test_name)[0].is_alive(), True)
 
     def test_kill_update_in_db(self):
         """ Checks if kill() sets the date_death to now() """
         create_slave()
-        Slave.objects.kill(Slave.objects.latest('date_birth'))
-        victim = Slave.objects.latest('date_birth')
-        self.assertIsNotNone(victim.date_death)
+        Slave.objects.kill(Slave.objects.latest('_date_birth'))
+        victim = Slave.objects.latest('_date_birth')
+        self.assertIsNotNone(victim._date_death)
 
     def test_kill_with_date_specified(self):
         create_slave()
         kill_date = timezone.now().replace(microsecond=0) - datetime.timedelta(days=3)
         print(kill_date)
-        Slave.objects.kill(Slave.objects.latest('date_birth'), kill_date)
-        victim = Slave.objects.latest('date_birth')
-        self.assertEqual(victim.date_death, kill_date)
+        Slave.objects.kill(Slave.objects.latest('_date_birth'), kill_date)
+        victim = Slave.objects.latest('_date_birth')
+        self.assertEqual(victim._date_death, kill_date)
 
 
-class SlaveMethodTests(TestCase):
+class SlaveLifeTests(TestCase):
+    """ Tests for age zone methods """
+    
+    def setUp(self):
+        pass
+        
+##############
+    def test_is_child_with_not_yet_born(self):
+        """ List of slaves should not show objects
+        with date_init in the future """
+        time = timezone.now() + datetime.timedelta(hours=1)
+        future_slave = Slave.objects.spawn(_date_birth=time)
+        self.assertEqual(future_slave.is_baby(), False)
 
-    GAME_YEAR = 3600
-    BABY_AGE = 5
-    CHILD_AGE = 15
-    REPRODUCTIVE_AGE = 25
+    def test_is_child_with_not_yet_born(self):
+        """ List of slaves should not show objects
+        with date_init in the future """
+        time = timezone.now() + datetime.timedelta(hours=1)
+        future_slave = Slave(_date_birth=time)
+        self.assertEqual(future_slave.is_child(), False)
 
+    def test_is_child_with_not_yet_born(self):
+        """ List of slaves should not show objects
+        with date_init in the future """
+        time = timezone.now() + datetime.timedelta(hours=1)
+        future_slave = Slave(_date_birth=time)
+        self.assertEqual(future_slave.is_reproductive(), False)
+
+    def test_is_adult_with_not_yet_born(self):
+        """ List of slaves should not show objects
+        with date_init in the future """
+        time = timezone.now() + datetime.timedelta(hours=1)
+        future_slave = Slave(_date_birth=time)
+        self.assertEqual(future_slave.is_adult(), False)
+
+#################
+    def test_is_baby_with_old_slave(self):
+        time = timezone.now() - \
+            datetime.timedelta(seconds=(GAME_YEAR * (REPRODUCTIVE_AGE) + 1))
+        test_slave = Slave(_date_birth=time)
+        self.assertEqual(test_slave.is_baby(), False)
+
+    def test_is_child_with_old_slave(self):
+        time = timezone.now() - \
+            datetime.timedelta(seconds=(GAME_YEAR * (REPRODUCTIVE_AGE) + 1))
+        test_slave = Slave(_date_birth=time)
+        self.assertEqual(test_slave.is_child(), False)
+
+    def test_is_reproductive_with_old_slave(self):
+        time = timezone.now() - \
+            datetime.timedelta(seconds=(GAME_YEAR * (REPRODUCTIVE_AGE) + 1))
+        test_slave = Slave(_date_birth=time)
+        self.assertEqual(test_slave.is_reproductive(), False)
+
+    def test_is_adult_with_old_slave(self):
+        time = timezone.now() - \
+            datetime.timedelta(seconds=(GAME_YEAR * (REPRODUCTIVE_AGE) + 1))
+        test_slave = Slave(_date_birth=time)
+        self.assertEqual(test_slave.is_adult(), True)
+
+##################
+    def test_is_baby_with_baby_slave(self):
+        time = timezone.now() - datetime.timedelta(hours=1)
+        test_slave = Slave(_date_birth=time)
+        self.assertEqual(test_slave.is_baby(), True)
+
+    def test_is_child_with_baby_slave(self):
+        time = timezone.now() - \
+            datetime.timedelta(seconds=(GAME_YEAR * (BABY_AGE) - 1))
+        test_slave = Slave(_date_birth=time)
+        self.assertEqual(test_slave.is_child(), False)
+
+    def test_is_adult_with_baby_slave(self):
+        time = timezone.now() - \
+            datetime.timedelta(seconds=(GAME_YEAR * (BABY_AGE) - 1))
+        test_slave = Slave(_date_birth=time)
+        self.assertEqual(test_slave.is_adult(), False)
+
+    def test_is_reproductive_with_baby_slave(self):
+        time = timezone.now() - \
+            datetime.timedelta(seconds=(GAME_YEAR * (BABY_AGE) - 1))
+        test_slave = Slave(_date_birth=time)
+        self.assertEqual(test_slave.is_reproductive(), False)
+
+###################
+
+    def test_is_baby_with_child_slave(self):
+        time = timezone.now() - \
+            datetime.timedelta(seconds=(GAME_YEAR * (CHILD_AGE - 1)))
+        test_slave = Slave(_date_birth=time)
+        self.assertEqual(test_slave.is_baby(), False)
+
+    def test_is_child_with_child_slave(self):
+        time = timezone.now() - \
+            datetime.timedelta(seconds=(GAME_YEAR * (CHILD_AGE - 1)))
+        test_slave = Slave(_date_birth=time)
+        self.assertEqual(test_slave.is_child(), True)
+
+    def test_is_reproductive_with_child_slave(self):
+        time = timezone.now() - \
+            datetime.timedelta(seconds=(GAME_YEAR * (CHILD_AGE - 1)))
+        test_slave = Slave(_date_birth=time)
+        self.assertEqual(test_slave.is_reproductive(), False)
+
+    def test_is_adult_with_child_slave(self):
+        time = timezone.now() - \
+            datetime.timedelta(seconds=(GAME_YEAR * (CHILD_AGE - 1)))
+        test_slave = Slave(_date_birth=time)
+        self.assertEqual(test_slave.is_adult(), False)
+
+####################
+    def test_is_baby_with_reproductive_slave(self):
+        time = timezone.now() - \
+            datetime.timedelta(seconds=(GAME_YEAR * (REPRODUCTIVE_AGE - 1)))
+        test_slave = Slave(_date_birth=time)
+        self.assertEqual(test_slave.is_baby(), False)
+
+    def test_is_child_with_reproductive_slave(self):
+        time = timezone.now() - \
+            datetime.timedelta(seconds=(GAME_YEAR * (REPRODUCTIVE_AGE - 1)))
+        test_slave = Slave(_date_birth=time)
+        self.assertEqual(test_slave.is_child(), False)
+
+    def test_is_reproductive_with_reproductive_slave(self):
+        time = timezone.now() - \
+            datetime.timedelta(seconds=(GAME_YEAR * (REPRODUCTIVE_AGE - 1)))
+        test_slave = Slave(_date_birth=time)
+        self.assertEqual(test_slave.is_reproductive(), True)
+
+    def test_is_adult_with_reproductive_slave(self):
+        time = timezone.now() - \
+            datetime.timedelta(seconds=(GAME_YEAR * (REPRODUCTIVE_AGE - 1)))
+        test_slave = Slave(_date_birth=time)
+        self.assertEqual(test_slave.is_adult(), True)
+
+##################
+    def test_is_alive_with_not_yet_born(self):
+        time = timezone.now() + datetime.timedelta(hours=1)
+        future_slave = Slave(_date_birth=time)
+        self.assertEqual(future_slave.is_alive(), False)
+
+    def test_is_alive_with_already_dead(self):
+        time = timezone.now()
+        birth_time = timezone.now() - datetime.timedelta(days=21)
+        future_slave = Slave(_date_birth=birth_time, _date_death=time)
+        self.assertEqual(future_slave.is_alive(), False)
+
+
+
+
+
+
+class SlaveSkillTests(TestCase):
     """ Tests for skills.
         As far as direct access to Skill class is not recommended
         this should be done via Slave objects """
@@ -94,149 +244,6 @@ class SlaveMethodTests(TestCase):
         sk1 = create_skill()
         self.assertEqual(sl.get_skill(sk1), 0)
 
-
-
-    """ Tests for age zone methods """
-##############
-    def test_is_child_with_not_yet_born(self):
-        """ List of slaves should not show objects
-        with date_init in the future """
-        time = timezone.now() + datetime.timedelta(hours=1)
-        future_slave = Slave(date_birth=time)
-        self.assertEqual(future_slave.is_baby(), False)
-
-    def test_is_child_with_not_yet_born(self):
-        """ List of slaves should not show objects
-        with date_init in the future """
-        time = timezone.now() + datetime.timedelta(hours=1)
-        future_slave = Slave(date_birth=time)
-        self.assertEqual(future_slave.is_child(), False)
-
-    def test_is_child_with_not_yet_born(self):
-        """ List of slaves should not show objects
-        with date_init in the future """
-        time = timezone.now() + datetime.timedelta(hours=1)
-        future_slave = Slave(date_birth=time)
-        self.assertEqual(future_slave.is_reproductive(), False)
-
-    def test_is_adult_with_not_yet_born(self):
-        """ List of slaves should not show objects
-        with date_init in the future """
-        time = timezone.now() + datetime.timedelta(hours=1)
-        future_slave = Slave(date_birth=time)
-        self.assertEqual(future_slave.is_adult(), False)
-
-#################
-    def test_is_baby_with_old_slave(self):
-        time = timezone.now() - \
-            datetime.timedelta(seconds=(__class__.GAME_YEAR * (__class__.REPRODUCTIVE_AGE) + 1))
-        test_slave = Slave(date_birth=time)
-        self.assertEqual(test_slave.is_baby(), False)
-
-    def test_is_child_with_old_slave(self):
-        time = timezone.now() - \
-            datetime.timedelta(seconds=(__class__.GAME_YEAR * (__class__.REPRODUCTIVE_AGE) + 1))
-        test_slave = Slave(date_birth=time)
-        self.assertEqual(test_slave.is_child(), False)
-
-    def test_is_reproductive_with_old_slave(self):
-        time = timezone.now() - \
-            datetime.timedelta(seconds=(__class__.GAME_YEAR * (__class__.REPRODUCTIVE_AGE) + 1))
-        test_slave = Slave(date_birth=time)
-        self.assertEqual(test_slave.is_reproductive(), False)
-
-    def test_is_adult_with_old_slave(self):
-        time = timezone.now() - \
-            datetime.timedelta(seconds=(__class__.GAME_YEAR * (__class__.REPRODUCTIVE_AGE) + 1))
-        test_slave = Slave(date_birth=time)
-        self.assertEqual(test_slave.is_adult(), True)
-
-##################
-    def test_is_baby_with_baby_slave(self):
-        time = timezone.now() - datetime.timedelta(hours=1)
-        test_slave = Slave(date_birth=time)
-        self.assertEqual(test_slave.is_baby(), True)
-
-    def test_is_child_with_baby_slave(self):
-        time = timezone.now() - \
-            datetime.timedelta(seconds=(__class__.GAME_YEAR * (__class__.BABY_AGE) - 1))
-        test_slave = Slave(date_birth=time)
-        self.assertEqual(test_slave.is_child(), False)
-
-    def test_is_adult_with_baby_slave(self):
-        time = timezone.now() - \
-            datetime.timedelta(seconds=(__class__.GAME_YEAR * (__class__.BABY_AGE) - 1))
-        test_slave = Slave(date_birth=time)
-        self.assertEqual(test_slave.is_adult(), False)
-
-    def test_is_reproductive_with_baby_slave(self):
-        time = timezone.now() - \
-            datetime.timedelta(seconds=(__class__.GAME_YEAR * (__class__.BABY_AGE) - 1))
-        test_slave = Slave(date_birth=time)
-        self.assertEqual(test_slave.is_reproductive(), False)
-
-###################
-
-    def test_is_baby_with_child_slave(self):
-        time = timezone.now() - \
-            datetime.timedelta(seconds=(__class__.GAME_YEAR * (__class__.CHILD_AGE - 1)))
-        test_slave = Slave(date_birth=time)
-        self.assertEqual(test_slave.is_baby(), False)
-
-    def test_is_child_with_child_slave(self):
-        time = timezone.now() - \
-            datetime.timedelta(seconds=(__class__.GAME_YEAR * (__class__.CHILD_AGE - 1)))
-        test_slave = Slave(date_birth=time)
-        self.assertEqual(test_slave.is_child(), True)
-
-    def test_is_reproductive_with_child_slave(self):
-        time = timezone.now() - \
-            datetime.timedelta(seconds=(__class__.GAME_YEAR * (__class__.CHILD_AGE - 1)))
-        test_slave = Slave(date_birth=time)
-        self.assertEqual(test_slave.is_reproductive(), False)
-
-    def test_is_adult_with_child_slave(self):
-        time = timezone.now() - \
-            datetime.timedelta(seconds=(__class__.GAME_YEAR * (__class__.CHILD_AGE - 1)))
-        test_slave = Slave(date_birth=time)
-        self.assertEqual(test_slave.is_adult(), False)
-
-####################
-    def test_is_baby_with_reproductive_slave(self):
-        time = timezone.now() - \
-            datetime.timedelta(seconds=(__class__.GAME_YEAR * (__class__.REPRODUCTIVE_AGE - 1)))
-        test_slave = Slave(date_birth=time)
-        self.assertEqual(test_slave.is_baby(), False)
-
-    def test_is_child_with_reproductive_slave(self):
-        time = timezone.now() - \
-            datetime.timedelta(seconds=(__class__.GAME_YEAR * (__class__.REPRODUCTIVE_AGE - 1)))
-        test_slave = Slave(date_birth=time)
-        self.assertEqual(test_slave.is_child(), False)
-
-    def test_is_reproductive_with_reproductive_slave(self):
-        time = timezone.now() - \
-            datetime.timedelta(seconds=(__class__.GAME_YEAR * (__class__.REPRODUCTIVE_AGE - 1)))
-        test_slave = Slave(date_birth=time)
-        self.assertEqual(test_slave.is_reproductive(), True)
-
-    def test_is_adult_with_reproductive_slave(self):
-        time = timezone.now() - \
-            datetime.timedelta(seconds=(__class__.GAME_YEAR * (__class__.REPRODUCTIVE_AGE - 1)))
-        test_slave = Slave(date_birth=time)
-        self.assertEqual(test_slave.is_adult(), True)
-
-##################
-    def test_is_alive_with_not_yet_born(self):
-        time = timezone.now() + datetime.timedelta(hours=1)
-        future_slave = Slave(date_birth=time)
-        self.assertEqual(future_slave.is_alive(), False)
-
-    def test_is_alive_with_already_dead(self):
-        time = timezone.now()
-        birth_time = timezone.now() - datetime.timedelta(days=21)
-        future_slave = Slave(date_birth=birth_time, date_death=time)
-        self.assertEqual(future_slave.is_alive(), False)
 
 
 class RaceDefaultsTests(TestCase):

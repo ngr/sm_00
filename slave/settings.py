@@ -1,7 +1,7 @@
 from django.conf import settings
 
 # TIME
-GAME_YEAR = 3600 
+GAME_YEAR = 86400
 GAME_MONTH = GAME_YEAR / 12
 GAME_DAY   = GAME_MONTH / 30
 
@@ -13,11 +13,12 @@ MIN_EXP_FOR_CHILD_SKILLS = 1275 # Equiv level 50
 KILLER_SLAVES_LIMIT = 100
 CHANCE_TO_DIE = 1000.0
 
-PRIMARY_SKILL_FARMING_VALUE = 0.5
-SECONDARY_SKILLS_FARMING_VALUE = 0.5
+PRIMARY_SKILL_WORK_VALUE = 0.5
+SECONDARY_SKILLS_WORK_VALUE = 0.5
 YIELD_RANDOMIZER = 25
 
-BASE_EXP_PER_DAY = 1
+BASE_EXP_PER_DAY = 3
+SECONDARY_SKILLS_EXP_PER_DAY = 1
 
 MIN_LOCATION_SIZE = 1
 
@@ -35,7 +36,6 @@ CHR = 3
 MALE = True
 FEMALE = False
 
-GAME_YEAR = 3600
 BABY_AGE = 5
 CHILD_AGE = 15
 REPRODUCTIVE_AGE = 25
@@ -65,16 +65,22 @@ ATTRIBUTE_CHOICES = (
 TASK_TYPES = (
         ('farming', 'Farming'),
         ('crafting', 'Crafting'),
+        ('building', 'Building'),
 )
 
+FIXED_TIME_TASK_TYPES = ('farmingtaskdirectory')
+FIXED_WORK_TASK_TYPES = ('craftingtaskdirectory', 'buildingtaskdirectory')
+
 TASK_DIRECTORIES = (
-        ('farmingtaskdirectory', 'Farming Task Directory'),
-        ('craftingtaskdirectory', 'Crafting Task Directory'),
+        ('farmingtaskdirectory', 'Farming Task'),
+        ('craftingtaskdirectory', 'Crafting Task'),
+        ('buildingtaskdirectory', 'Building Task'),
 )
 
 LOCATION_TYPES = (
         ('farmingfield', 'Farming Field'),
         ('housingdistrict', 'Housing District'),
+        ('workshop', 'Workshop'),
 )
 
 ITEM_TYPES = (

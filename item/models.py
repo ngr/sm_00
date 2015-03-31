@@ -56,8 +56,6 @@ class ItemDirectory(models.Model):
     is_core.boolean = True
     is_core.short_description = "Core Item"
 
-
-
 class MaterialDirectory(ItemDirectory):
     _density = models.PositiveSmallIntegerField(default=1)
 
@@ -94,6 +92,15 @@ class FoodDirectory(ItemDirectory):
     def set_shelf_life(self, time=MIN_FOOD_SHELF_LIFE):
         pass
 
+class ItemRecipe(models.Model):
+    """ Recipes of materials required to craft items. """
+    task_type   = models.ForeignKey('task.CraftingTaskDirectory', related_name='task_type')
+    ingredient  = models.ForeignKey(ItemDirectory, related_name='ingredient')
+    _amount     = models.PositiveIntegerField(default=1)
+    
+    def __str__(self):
+        return "{0} ingredient - {1}".format(self.task_type, self.ingredient)
+    
 class ItemManager(models.Manager):
     def get_items_of_type(self, itype=None, warehouse=None):
         """ Return objects of type/types from warehouse.

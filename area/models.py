@@ -1,3 +1,4 @@
+### Area application Models ###
 from django.db import models
 from django.db.models import Sum
 from django.utils import timezone
@@ -20,36 +21,36 @@ class RegionManager(models.Manager):
         args = ()
         kwargs = {}
 
-        if region:
+        if region: 
             kwargs['pk'] = region
 
 # This should be the last param
-        kwargs['_owner'] = owner
+        kwargs['owner'] = owner
         return self.filter(*args, **kwargs)
 
-
-
 class Region(models.Model):
+    """ Region is the macro element of area distribution. """
     _name = models.CharField(max_length=127)
-    area = models.BigIntegerField(default=1, validators=[MinValueValidator(1)])
-    _owner = models.ForeignKey('auth.User')
+    _area = models.BigIntegerField(default=1, validators=[MinValueValidator(1)])
+    
+    owner = models.ForeignKey('auth.User')
 
     objects = RegionManager()
 
     def get_free_area(self):
-        """ Return free area not assigned to locations """
-        return self.area - self.location_set.all().aggregate(Sum('area'))['area__sum']
+        """ Return free area not assigned to locations. """
+        return self._area - self.location_set.all().aggregate(Sum('_area'))['_area__sum']
 
     def get_owner(self):
-        """ Return the current owner of the Region """
-        return self._owner
+        """ Return the current owner of the Region. """
+        return self.owner
 
     def auth_allowed(self, user):
-        """ Check permissions to access object """
+        """ Check permissions to access object. """
         return self.get_owner() == user
 
     def get_slaves(self, withdead=False, free=False, by_districts=False):
-        """ List of slaves currently living in HousingDistricts of the Region """
+        """ List of slaves currently living in HousingDistricts of the Region. """
         inhabitants = {}
         districts = self.get_housing()
         for d in districts:
@@ -105,26 +106,17 @@ class Region(models.Model):
         return districts
 
 
-    def house_slave(self, slave):
+    def find_house_for_slave(self):
+        """ Find best HousingDistrict. """
         housing = self.get_housing()
-
         housing = sorted(housing.items(), key=lambda k_v: k_v[1]['comfort'], reverse=True)
-# There should be multiple sort keys or smth. Ticket #13
-#        housing = sorted(housing, key=lambda k_v: k_v[1]['free'], reverse=True)
 
         if len(housing) == 0 or housing[0][1]['free'] == 0:
             print("No housing available in Region!")
             return False
         else:
-            print("Housing in %s with comfort %s. Inhabs %s, free %s" % (housing[0][0].housingdistrict, housing[0][1]['comfort'], housing[0][1]['beds'], housing[0][1]['free']))
+            print("Housing in %s with comfort %s. Inhabs %s, free %s" % (housing[0][0].housingdistrict, housing[0][1]['comfort'], housing[0][1]['inhabitants'], housing[0][1]['free']))
             return housing[0][0].housingdistrict
-
-        print(housing)
-#        if housing[0][0].housingdistrict.add_inhabitant():
-#            print("Successfully housed slave")
-#            return housing[0][0].housingdistrict 
-#        else:
-#            print("Could not add inhabitant to ", housing[0])
 
     def get_locations(self):
         """ Return all locations of region """
@@ -137,8 +129,8 @@ class Region(models.Model):
     def put_to_warehouse(self, item, amount=1):
         """ This is the main entry function to put items to Region warehouses """
         wh = self.warehouse_set.last()
+        print("Putting {2} of {1} to warehouse {3} in region {0}".format(self, item, amount, wh))
         wh.put(item, amount)
-#        print("Putting {2} of {1} to warehouse {3} in region {0}".format(self, item, amount, wh))
 
     def get_item_list(self, itype=None):
         """ Return items from region warehouses """
@@ -159,32 +151,82 @@ class Region(models.Model):
         # return processed result
         print(result)
         return result
+        
+    def create_location(self, type, name=None, area=None):
+    
+        if type == 'farmingfield':
+            new_location = FarmingField(region=self)
+        elif type == 'workshop':
+            new_location = Workshop(region=self)
+        elif type == 'housingdistrict':
+            new_location = HousingDistrict(region=self)
+        
+        if name:
+            new_location.set_name(name)
+        if area:
+            new_location.set_area(area)
+        
+        new_location.save()
+        return
+    
+
+class BuildingType(models.Model):
+    _name       = models.CharField(max_length=127)
+    
+
+    def __str__(self):
+        return self._name
+
+class BuildingMaterialRecipe(models.Model):
+    """ Recipes of materials required to construct buildings. """
+
+    task_type   = models.ForeignKey('task.BuildingTaskDirectory')
+    material    = models.ForeignKey('item.MaterialDirectory')
+    _amount     = models.PositiveIntegerField(default=1)
 
 
 
 class Location(models.Model):
     _name   = models.CharField(max_length=127, blank=True)
     _area    = models.PositiveIntegerField(default=1, validators=[MinValueValidator(MIN_LOCATION_SIZE)])
+    _area_used = models.PositiveIntegerField(default=0)
     region  = models.ForeignKey(Region)
+    
 
     def get_name(self):
-        """ Return the name of location """
+        """ Return the name of location. """
         return self._name
         
         
     def get_area(self):
-        """ Return the area of location """
+        """ Return the area of location. """
         return self._area
 
     def get_region(self):
-        """ Return the parent Region of Location """
+        """ Return the parent Region of Location. """
         return self.region
+    
+    def get_owner(self):
+        """ Return the owner of the parent Region. """
+        return self.get_region().get_owner()
 
     def set_area(self, a):
         """ Set the area of location if there is free area in Region """
         if not validate_in_range_int(a, MIN_LOCATION_SIZE, super(get_free_area)):
             return False
         self._area = int(float(a))
+
+    def get_free_area(self):
+        """ Returns amount of unused area in Location to determine if Task can be created here. """
+        return self._area - self._area_used
+
+    def use_area(self, amount):
+        """ Reserves area for some Task. """
+        if not amount <= self.get_free_area():
+            return False
+
+        self._area_used -= amount
+        return True
 
     def get_type(self):
         """ Returns readable type of location object """
@@ -205,19 +247,6 @@ class Location(models.Model):
     
 class FarmingField(Location):
     """ Farming tasks are performed in this Locations. """
-    _area_used = models.PositiveIntegerField(default=0)
-
-    def get_free_area(self):
-        """ Returns amount of unused area in Location to determine if Task can be created here. """
-        return self._area - self._area_used
-
-    def use_area(self, amount):
-        """ Reserves area for some Task. """
-        if not amount <= self.get_free_area():
-            return False
-
-        self._area_used -= amount
-        return True
 
     def get_bonus_yield(self):
         """ This to be done later """
@@ -243,18 +272,28 @@ class HousingDistrict(Location):
     def get_inhabitants(self, withdead=False):
         """ Return current inhabitants of district """
         return self.slave_set if withdead\
-                else self.slave_set.filter(date_death__isnull=True)
+                else self.slave_set.filter(_date_death__isnull=True)
 
     def get_inhabitants_count(self, withdead=False):
         """ Return current inhabitants of district """
         return self.slave_set.count() if withdead\
-                else self.slave_set.filter(date_death__isnull=True).count()
+                else self.slave_set.filter(_date_death__isnull=True).count()
 
     def get_free_beds(self):
         """ Return the number of space left for maximum density beds """
         return int(self.get_area() / MIN_BED_AREA - self.get_inhabitants_count())
 
 
+class Workshop(Location):
+    """ This is the Location to craft and build in. """
+    
+    def get_workers(self):
+        """ Get list of Slaves assigned """
+        return self.assignment_set.all()
+    
+    def count_workers(self):
+        """ Get number of Slaves assigned to task in this building. """
+        return self.assignment_set.all().count()
 
 
 ##############

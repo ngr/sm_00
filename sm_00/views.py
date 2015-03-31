@@ -9,13 +9,24 @@ from slave.models import Slave
 from area.models import Region
 from django.contrib.auth.views import logout
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from rest_framework.reverse import reverse
+from rest_framework import status
+from rest_framework import generics
 
-#class Navigation(generic.View):
-#    template_name = 'sm_00/navigation.html'
-#    print("LOAD NAV")
-#    object = ['slave', 'task', 'skill']
-#    def get(self, request, *args, **kwargs):
-#       return super(Navigation, self).get(request, *args, **kwargs)
+from sm_00.serializers import UserSerializer
+from django.contrib.auth.models import User
+
+
+@api_view(('GET',))
+def api_root(request, format=None):
+    return Response({
+        'task': reverse('api:task-list', request=request, format=format),
+        'assignment': reverse('api:assignment-list', request=request, format=format)
+    })
+
 
 class LogoutView(RedirectView):
     
@@ -30,17 +41,12 @@ class IndexView(TemplateView):
         context['user'] = self.request.user
 #print("InxexView",context['user'])
         return context
-#    def get(self, request):
 
-#        pass
-#    context_object_name = 'slaves_list'
+class UserList(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
-#    def get_queryset(self):
-#        return ''
-#        return Region.objects.all().get(pk=2).get_slaves()
-
-
-
-
-
-# Create your views here.
+class UserDetail(generics.RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+ 

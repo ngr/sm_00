@@ -21,7 +21,7 @@ def retriever(*args, **options):
     for t in ttr:
         try:
             t.retrieve()
-        except TaskError:
+        except:
             print("ERROR! Cannot retrieve task {0}.".format(t))
 
     return "Finished"

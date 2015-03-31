@@ -1,5 +1,5 @@
 from django.contrib import admin
-from item.models import ItemDirectory, FoodDirectory, MaterialDirectory, Item, ItemJoffreyList
+from item.models import ItemDirectory, FoodDirectory, MaterialDirectory, ItemRecipe, Item, ItemJoffreyList
 #, Food, Material
 #from item.models import ItemDirectory, FoodDirectory, ItemType, Item, Food
 
@@ -12,7 +12,7 @@ class ItemDirectoryAdmin(admin.ModelAdmin):
 admin.site.register(ItemDirectory, ItemDirectoryAdmin)
 admin.site.register(FoodDirectory)
 admin.site.register(MaterialDirectory)
-#admin.site.register(ItemType)
+admin.site.register(ItemRecipe)
 admin.site.register(Item)
 admin.site.register(ItemJoffreyList)
 #admin.site.register(Food)

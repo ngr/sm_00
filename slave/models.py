@@ -1,3 +1,4 @@
+### SLAVE application models ###
 import datetime
 from random import random, randrange, choice
 from math import floor
@@ -7,20 +8,11 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.core.files.storage import FileSystemStorage
 #from django.contrib.auth.models import User
 from slave.settings import *
+from slave.helpers import *
 
+from area.models import HousingDistrict, Location, Region
 from skill.models import Skill, SkillTrained
-from area.models import HousingDistrict, Location
 from task.models import Assignment, Task, TaskDirectory as TD
-
-""" HERE ARE SOME HELPERS """
-def random_line(afile):
-    """ Returns a random line from given afile """
-    line = next(afile)
-    for num, aline in enumerate(afile):
-        if randrange(num + 2): continue
-        line = aline
-    return line
-
 
 class SlaveManager(models.Manager):
 
@@ -35,35 +27,36 @@ class SlaveManager(models.Manager):
             kwargs['pk'] = slave
 
         if not withdead:
-            kwargs['date_death__isnull'] = True
+            kwargs['_date_death__isnull'] = True
 
 
-# This should be the last param
-        kwargs['_owner'] = owner
+        # This should be the last param for security reasons
+        kwargs['owner'] = owner
         return self.filter(*args, **kwargs)
 
 
     def spawn(self, **kwargs):
-        """ Spawn a new slave with random parameters but you can forse any in kwargs. """
-        larva = self.create(date_birth=timezone.now())
+        """ Spawn a new slave with random parameters but you can force any in kwargs. """
+        larva = self.create(_date_birth=timezone.now())
         MIN_ATTR = 1
         MAX_ATTR = 10
         DELTA_ATTR = 2
-        VALID_ATTRIBS = ['intelligence', 'strength', 'agility',\
-                    'charisma', 'name', 'date_birth', 'date_death',\
-                     'race', 'sex', 'happiness', 'satiety']
+        VALID_ATTRIBS = ['_intelligence', '_strength', '_agility',\
+                    '_charisma', '_name', '_date_birth', '_date_death',\
+                     '_race', '_sex', '_happiness', '_satiety', 'owner', 'location']
 
     # Define larva race
-        if 'race' in kwargs:
-            larva.race = kwargs['race']
+        if '_race' in kwargs:
+            larva._race = kwargs['_race']
         else:
-            larva.race = choice([0,1,2])
+        # FIXME! Need to use setting here to choose race
+            larva._race = choice([0,1,2])
 #        print("Race is set to:", larva.race)
     
     # Define attributes 
     # Default values are overwritten by hard set in kwargs
     # Defaults are randomized with DELTA_ATTR
-        defaults = RaceDefaults.objects.all().filter(race=larva.race)
+        defaults = RaceDefaults.objects.all().filter(race=larva._race)
         for param in defaults:
             if param.param in kwargs:
                 val = kwargs.pop(param.param)
@@ -79,13 +72,13 @@ class SlaveManager(models.Manager):
 #            print("Hard defined param:", param, "=", value)
 
     # Setting sex if not yet defined
-        if larva.sex is None:
-            larva.sex = choice([0, 1])
+        if larva._sex is None:
+            larva._sex = choice([0, 1])
 
     # Setting name if not yet defined
-        if not larva.name:
+        if not larva._name:
  #           print("Try to choose name")
-            larva.name = self.__generate_name(larva.sex, larva.race)
+            larva._name = self.__generate_name(larva._sex, larva._race)
 #        print("Name:", larva.name)
 
         larva.save()
@@ -133,66 +126,75 @@ class SlaveManager(models.Manager):
         file_with_names = open('/'.join([path.location, dict_name]), 'r')
         return random_line(file_with_names).rstrip()
 
-
 class Slave(models.Model):
+    """ This is the main unit in the game. """
+    _name = models.CharField(max_length=127)
+    _date_birth = models.DateTimeField('Date of birth')
+    _date_death = models.DateTimeField('Date of death', null=True)
+    _sex = models.NullBooleanField(choices=SEX_CHOICES, null=True )
+    _race = models.PositiveSmallIntegerField(choices=RACE_CHOICES, default=BLUE)
 
-#    MALE = True
-#    FEMALE = False
-
-#    GAME_YEAR = 3600
-#    BABY_AGE = 5
-#    CHILD_AGE = 15
-#    REPRODUCTIVE_AGE = 25
-    
-#    BLUE = 0
-#    CYAN = 1
-#    AQUA = 2
-
-#    SEX_CHOICES = (
-#            (MALE, 'Male'),
-#            (FEMALE, 'Female'),
-#            )
-#    RACE_CHOICES = (
-#            (BLUE, 'Blue'),
-#            (CYAN, 'Cyan'),
-
-#            (AQUA, 'Aqua'),
-#            )
-    name = models.CharField(max_length=127)
-    date_birth = models.DateTimeField('Date of birth')
-    date_death = models.DateTimeField('Date of death', null=True)
-    sex = models.BooleanField(choices=SEX_CHOICES, default=None )
-    race = models.PositiveSmallIntegerField(choices=RACE_CHOICES, default=BLUE)
-
-    intelligence = models.PositiveSmallIntegerField(default=1,\
+    _intelligence = models.PositiveSmallIntegerField(default=1,\
             validators=[MinValueValidator(1), MaxValueValidator(10)])
-    strength = models.PositiveSmallIntegerField(default=1,\
+    _strength = models.PositiveSmallIntegerField(default=1,\
             validators=[MinValueValidator(1), MaxValueValidator(10)])
-    agility = models.PositiveSmallIntegerField(default=1,\
+    _agility = models.PositiveSmallIntegerField(default=1,\
             validators=[MinValueValidator(1), MaxValueValidator(10)])
-    charisma = models.PositiveSmallIntegerField(default=1,\
+    _charisma = models.PositiveSmallIntegerField(default=1,\
             validators=[MinValueValidator(1), MaxValueValidator(10)])
 
-    happiness = models.SmallIntegerField(default=0,\
+    _happiness = models.SmallIntegerField(default=0,\
             validators=[MinValueValidator(-100), MaxValueValidator(100)])
-    satiety = models.PositiveSmallIntegerField(default=0,\
+    _satiety = models.PositiveSmallIntegerField(default=0,\
             validators=[MinValueValidator(0), MaxValueValidator(100)])
 
-    location = models.ForeignKey(HousingDistrict, null=True)
-    _owner   = models.ForeignKey('auth.User', default=1)
+    location = models.ForeignKey(HousingDistrict, null=False)
+    owner   = models.ForeignKey('auth.User', related_name='slaves', default=1)
 
     objects = SlaveManager()
 
     def __str__(self):
-        return self.name
+        return self._name
 
     def get_name(self):
         """ Return the name of the Slave """
-        return self.name
+        return self._name
+
+# AGE SECTION
+    def is_baby(self):
+        """ Return if Slave is in 'baby' age period. """
+        return timezone.now() - datetime.timedelta(seconds=(GAME_YEAR * BABY_AGE))\
+            <= self._date_birth <= timezone.now() and not self._date_death
+
+    def is_child(self):
+        """ Return if Slave is in 'child' age period. """
+        return self._date_birth + datetime.timedelta(seconds=(GAME_YEAR * BABY_AGE))\
+            <= timezone.now()\
+            <= self._date_birth + datetime.timedelta(seconds=(GAME_YEAR * CHILD_AGE))\
+            and not self._date_death
+    
+    def is_reproductive(self):
+        """ Return if Slave is in 'reproductive' age period. """
+        return self._date_birth + datetime.timedelta(seconds=(GAME_YEAR * CHILD_AGE))\
+            <= timezone.now()\
+            <= self._date_birth + datetime.timedelta(seconds=(GAME_YEAR * REPRODUCTIVE_AGE))\
+            and not self._date_death
+
+    def is_adult(self):
+        """ Return if Slave is in 'adult' age period. """
+        return self._date_birth + datetime.timedelta(seconds=(GAME_YEAR * CHILD_AGE))\
+                <= timezone.now() and not self._date_death
+
+    def is_alive(self):
+        """ Return if Slave is already born and not yet dead. """
+        return self._date_birth <= timezone.now() and not self._date_death
 
     def get_age(self):
-        """ Return age of the Slave """
-        return floor((timezone.now() - self.date_birth).total_seconds() / GAME_YEAR)
+        """ Return current age of Slave or age when he died (in game years). """
+        if self._date_death is not None:
+            return int((self._date_death - self._date_birth).total_seconds() // GAME_YEAR)
+        else:
+            return int((timezone.now() - self._date_birth).total_seconds() // GAME_YEAR)
 
     def get_location(self):
         """ Return current location of Slave """
@@ -200,124 +202,91 @@ class Slave(models.Model):
 
     def get_owner(self):
         """ Return the current owner of the Slave """
-        return self._owner
+        return self.owner
 
     def auth_allowed(self, user):
         """ Check if user is owner. More complex access rights to be developed. """
         return self.get_owner() == user
 
-    def is_baby(self):
-        return timezone.now() - datetime.timedelta(seconds=(GAME_YEAR * BABY_AGE))\
-            <= self.date_birth <= timezone.now() and not self.date_death
-
-    def is_child(self):
-        return self.date_birth + datetime.timedelta(seconds=(GAME_YEAR * BABY_AGE))\
-            <= timezone.now()\
-            <= self.date_birth + datetime.timedelta(seconds=(GAME_YEAR * CHILD_AGE))\
-            and not self.date_death
+# ATTRIBUTES SECTION
+    from slave.settings import ATTRIBUTE_CHOICES
     
-    def is_reproductive(self):
-        return self.date_birth + datetime.timedelta(seconds=(GAME_YEAR * CHILD_AGE))\
-            <= timezone.now()\
-            <= self.date_birth + datetime.timedelta(seconds=(GAME_YEAR * REPRODUCTIVE_AGE))\
-            and not self.date_death
+    def get_attribute(self, attribute):
+        """ Return the current value of Slave attribute. Attribute must be string. """
+        # Check validity of type
+        if not isinstance(attribute, str):
+            print("Invalid type for Slave->get_attribute. Must be name of attribute in string.")
+            return False
 
-    def is_adult(self):
-        return self.date_birth + datetime.timedelta(seconds=(GAME_YEAR * CHILD_AGE))\
-                <= timezone.now() and not self.date_death
+        # If requested string check if it works
+        # FIXME Need to check here! Now accepts only full names of parameters.
+        attr_name = clean_string_lower(attribute)
+            
+        # Finally get and return attribute value.
+        try:
+            return getattr(self, ''.join(['_', attr_name]))
+        except:
+        # Getting is not critical to False is returned
+            print("Invalid attribute name for Slave->get_attribute(). Must be name of attribute.")
+            return False
+            
+    def set_attribute(self, attribute, value):
+        """ Set new value to Slave attribute. """
+        # This is critical to set exact attribute so full name required here.
+        if not isinstance(attribute, str):
+            raise AttributeError("Wrong input type for Slave->set_attribute()")
+        
+        # Now check if attribute is a correct name of attribute
+        attr_name = clean_string_lower(attribute)
+        if not any(attribute.title() in names for names in ATTRIBUTE_CHOICES):
+            raise AttributeError("Wrong attribute name for Slave->set_attribute()")
+            
+        # Check if value is in correct range
+        if not validate_in_range_int(value, minv=1, maxv=10):
+            raise AttributeError("Wrong value for attribute in Slave->set_attribute()")
 
-    def is_alive(self):
-        return self.date_birth <= timezone.now() and not self.date_death
+        # Now we try to change the attribute
+        try:
+            setattr(self, ''.join(['_', clean_string_lower(attribute)]), value)
+        except:
+        # This is critical to set exact attribute.
+            raise AttributeError("Wrong input for set_attribute()")
+        
+        # Save attribute changes to DB
+        self.save()
+        return self.get_attribute(attribute)
 
-    def get_age(self):
-        if self.date_death is not None:
-            return int((self.date_death - self.date_birth).total_seconds() // GAME_YEAR)
-        else:
-            return int((timezone.now() - self.date_birth).total_seconds() // GAME_YEAR)
-
-#    def get_skills(self, *args):
-    """ Returns the current skill level on requested skills.
-            Args can be a list or single skills.
-            If skill is not trained return 0 value.
-            If args not set return all skills. """
-#        result = {}
-
-#        if not args:
-    """ Returning all trained skills.
-            Should one day take all skills and return zeros if not trained
-            same as we do it if request exists. """
-#            sk_all = self.skilltrained_set.all()
-#            sk_all = SkillTrained.objects.get_available_skills(self)
-#            print(sk_all)
-#            if len(sk_all) > 0:
-#                for s in sk_all:
-#                    result[s] = SkillTrained.objects.get_skill_level(self, s)
-#            return result
-
-#        for sk in args:
-#            print("Requested slave skill:", self, sk)
-
-    """print("sk is Skill instance:", sk.__class__.__name__ == 'Skill')
-            if sk.__class__.__name__ == 'Skill':
-                if self.skilltrained_set.filter(skill=sk).exists():
-                    result[sk] = self.skilltrained_set.get(skill=sk).level
-                else:
-                    result[sk] = 0
-            else:
-                for s in sk:
-#                    print("Processing s:", s)
-                    if self.skilltrained_set.filter(skill=s).exists():
-#                       print("Looks like this skill is trained:", s)
-                       result[s] = self.skilltrained_set.get(skill=s).level
-                    else:
-                        result[s] = 0"""
-
-
-    """if self.skilltrained_set.filter(skill=sk).exists():
-                    if sk.all().count() > 1: # Any of args can be a list
-                        for s in sk.all():
-                            if self.skilltrained_set.filter(skill=s).exists():
-#                               print("Looks like this secondary skill is trained:", s)
-                                result[s] = self.skilltrained_set.get(skill=s).level
-                    else:
-                # We know that skilltrained is unique so use get()
-                        result[sk] = self.skilltrained_set.get(skill=sk).level
-                else:
-                    result[sk] = 0 """
-#       print("Returning:", result)
-#        return result
-
-
+# SKILLS SECTION
     def get_skill(self, skill):
+        """ Get current _skill_ level of Slave. """
         return SkillTrained.objects.get_skill_level(self, skill)
 
     def get_available_skills(self):
+        """ Get a list of skills currently available for learning (using). """
         return SkillTrained.objects.get_available_skills(self)
 
     def get_trained_skills(self):
+        """ Get a list of skill already trained for non-zero level. """
         result = {}
         sk_all = SkillTrained.objects.get_available_skills(self)
         if len(sk_all) > 0:
             for s in sk_all:
                 result[s] = SkillTrained.objects.get_skill_level(self, s)
         return result
+        
+    def add_skill_exp(self, skill, exp=1):
+        """ Add some experience for current Skill. """
+        print("Adding {1} exp in {0} for slave {2}".format(skill, exp, self))
+        if not isinstance(skill, Skill):
+            if isinstance(skill, int):
+                sk = Skill.objects.get(pk=skill)
+            else:
+                raise AttributeError("Skill must be <Skill> or int")
+        else:
+            sk = skill
+        SkillTrained.objects.add_exp(self, sk, exp)
 
-    def get_test(self):
-        sk_all = SkillTrained.objects.get_slave_skills(self)
-        print("SK ALL", sk_all)
-        return sk_all
-
-    def get_assignments(self, active=True):
-        return Assignment.objects.get_slave_assignments(slave=self, active=True) if active\
-                else Assignment.objects.get_slave_assignments(slave=self, active=False)
-
-    def is_free(self):
-        return self.get_assignments(True).count() == 0
-
-
-########################
-# Slave update
-    def set_skill(self, skill, exp):
+    def ___set_skill(self, skill, exp):
         """ This is an admin function. Should hide it later. """
         print(skill,exp)
         if not isinstance(skill, Skill):
@@ -329,27 +298,51 @@ class Slave(models.Model):
             sk = skill
         SkillTrained.objects.set_st(self, sk, exp)
 
-    def add_skill_exp(self, skill, exp=1):
-        """ Add some exp to current skill exp """
-        print("Adding {1} exp in {0} for slave {2}".format(skill, exp, self))
-        if not isinstance(skill, Skill):
-            if isinstance(skill, int):
-                sk = Skill.objects.get(pk=skill)
-            else:
-                raise AttributeError("Skill must be <Skill> or int")
-        else:
-            sk = skill
-        SkillTrained.objects.add_exp(self, sk, exp)
+#    def get_test(self):
+#        sk_all = SkillTrained.objects.get_slave_skills(self)
+#        print("SK ALL", sk_all)
+#        return sk_all
+        
+########################
+# TASK SECTON        
+
+    def get_assignments(self, active=True):
+        """ List assignments of Slave. If _active_ is False then show full list of assignment history. """
+        return Assignment.objects.get_slave_assignments(slave=self, active=True) if active\
+                else Assignment.objects.get_slave_assignments(slave=self, active=False)
+
+    def is_free(self):
+        """ Returns True if Slave is not assigned to any task now. """
+        return self.get_assignments(True).count() == 0
 
 
-    def set_location(self, region):
+########################
+# Slave update
+    def house(self, region):
         """ House the slave to the given region """
+      # If the region is given as Integer treat it as Region id.  
+        if isinstance(region, int):
+          # Try to find Region with this ID
+            try:
+                region = Region.objects.get(pk=region)
+          # In case of problems just return False. This is not critical.          
+            except  :
+                print("Slave->set_location() could not find region {0}.".format(region))
+                return False
+      # In case of problems just return False. This is not critical.
+        elif not isinstance(region, Region):
+            print("Slave->set_location() received a wrong _region_ value. Either integer or Region accepted.")
+            return False
+      
+      # This is cool script to find the best housing district in Region.
         try:
-            loc = region.house_slave(self)
+            loc = region.find_house_for_slave()
+      # In case of problems just return False. This is not critical.
         except:
             print("Could not house %s to region %s" % (self, region))
             return False
 
+      # If all is OK. We set Slave location to the one received from script.
         if loc:
             self.location = loc
             self.save()
@@ -374,22 +367,13 @@ class Slave(models.Model):
         task_location = Location.objects.get(pk=10)
         
         t = Task(_type=task_type, _location=task_location, _owner=self._owner)
-
+# 
         self.assign_to_task(t)
-
-
-
-
-
-
-
-
-
-
 
 #################################
 #################################
 class RaceDefaults(models.Model):
+    """ Settings table for default parameters when new slaves are born. """
     race = models.CharField(max_length=15)
     param = models.CharField(max_length=127)
     value = models.SmallIntegerField(default=0,\
@@ -399,7 +383,6 @@ class RaceDefaults(models.Model):
         return ' '.join([self.race, self.param])
 
 
-    
 class Parents(models.Model):
     """ This model keeps track of parent relationships. """ 
     child = models.ManyToManyField(Slave)
