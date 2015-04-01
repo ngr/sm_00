@@ -1,7 +1,7 @@
 ### TASK application models ###
 import datetime
 from random import random, randrange, choice
-from math import ceil
+from math import ceil, floor
 
 from django.db import models
 from django.utils import timezone
@@ -347,10 +347,16 @@ class Task(models.Model):
         pass
 
     def __str__(self):
-        return " - ".join([str(self.id), str(self.type)])
+        return " - ".join([str(self.id), str(self.type.get_type_readable())])
 
     def get_type(self):
         return self.type
+
+    def get_type_readable(self):
+        """ Get type directory (group of types). """
+        return self.type.get_type_readable()
+
+        
 
     def get_location(self):
         return self.location
@@ -394,8 +400,10 @@ class Task(models.Model):
     
     def has_free_space_in_location(self):
         """ Check if there is free space for more assignments. """
-        # FIXME
-        return True
+        required_area = self.type.get_area_per_worker()
+        available_area = self.get_location().get_free_area()
+        print("Location needs {0} area and currently has {1}.".format(required_area, available_area))
+        return available_area > required_area
 
     def get_farming_yield_item(self):
         return self.get_type().get_param('plant').get_yield_item()
@@ -531,23 +539,30 @@ class Task(models.Model):
         else:
             print("No Assignments to release")
 
+        print("Previous Slaves: {0}".format(previous_slaves))
+
         print("Retrieving yield")
-        print(self.get_type())
+        print(self.type.get_type())
         
-        if str(self.get_type()) == 'farmingtaskdirectory':
+        if str(self.type.get_type()) == 'farmingtaskdirectory':
+            self._retrieved = True
             self.finish_farming()
             
-        elif str(self.get_type()) == 'craftingtaskdirectory':
-          # Check if not all of the required work is finished.  
+        elif str(self.type.get_type()) == 'craftingtaskdirectory':
+          # Check if not all of the required work is finished.          
+            print("Fullfilled {0} of {1}".format(self.get_fulfilled(),
+                self.type.craftingtaskdirectory.get_work_units()))
             if self.get_fulfilled() < self.type.craftingtaskdirectory.get_work_units():
+                print("Previous Slaves: {0}".format(previous_slaves))
                 for s in previous_slaves:
                     print("Reassigning Slave {0} to Task {1}".format(s, self))
                     s.assign_to_task(self)
           # Otherwise finish the task
             else:
+                self._retrieved = True
                 self.finish_crafting()
                 
-        elif str(self.get_type()) == 'buildingtaskdirectory':
+        elif str(self.type.get_type()) == 'buildingtaskdirectory':
           # Check if not all of the required work is finished.  
             if self.get_fulfilled() < self.type.buildingtaskdirectory.get_work_units():
                 for s in previous_slaves:
@@ -555,9 +570,9 @@ class Task(models.Model):
 
           # Otherwise finish the task
             else:
+                self._retrieved = True
                 self.finish_building()
 
-        self._retrieved = True
         self.save() 
         return True
 
@@ -584,7 +599,7 @@ class Task(models.Model):
         """ Put to warehouse crafted items. """
         print("FINISH CRAFTING")
         item_produced = self.get_type().get_param('yield_item')
-        amount_produced = int(self.get_fulfilled() // 1)
+        amount_produced = floor(self.get_fulfilled() // self.get_type().get_param('work_units'))
         print("The task produced {0} work resulting in {1} of {2}".format(self.get_fulfilled(), amount_produced, item_produced))
     
       # Now put to warehouse
@@ -698,7 +713,7 @@ class Assignment(models.Model):
 
     def get_estimated_yield(self):
         return " - "
-
+ 
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -761,7 +776,7 @@ class Assignment(models.Model):
                 
         
         # Calculate and update work_units for parent Task.
-        print(duration, self.get_work_per_day())
+#        print(duration, self.get_work_per_day())
         assignment_work = duration * self.get_work_per_day()
         print("Total work produced by Assignment is: {0}".format(assignment_work))
 

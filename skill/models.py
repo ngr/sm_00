@@ -1,3 +1,10 @@
+#####################################
+# WARNING!
+# This was designed with little experience in appropriate patterns.
+# This is ABSOLUTELY NON RESTful.
+# Please never use any of this App methods except from within Slave App.
+# Planned for redesign!
+#####################################
 from django.db import models
 from django.db.models import Q
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -30,21 +37,21 @@ class STManager(models.Manager):
         print("Setting to slave skill with exp:", slave, skill, exp)
 
         exp = fit_to_range_int(exp, 0)
-        print("Fitted exp:", exp)
+#        print("Fitted exp:", exp)
 #        level, level1 = level1, level
 
         st = SkillTrained.objects.filter(slave=slave, skill=skill)
         if st:
-            print("ST record exists. Should try to update.", st)
+#            print("ST record exists. Should try to update.", st)
             if self.__skill_available(slave, skill):
-                print("Skill available. Updating exp:", exp)
+#                print("Skill available. Updating exp:", exp)
                 st.update(exp=exp)
             else:
                 print("Skill is not available.")
         else:
-            print("No ST record. Creating new one...", st)
+#            print("No ST record. Creating new one...", st)
             if self.__skill_available(slave, skill):
-                print("skill_available() returned True")
+#                print("skill_available() returned True")
                 st = SkillTrained(slave=slave, skill=skill, exp=exp)
                 st.save()
             else:
@@ -90,7 +97,7 @@ class STManager(models.Manager):
         if isinstance(skill, Skill):
             st = SkillTrained.objects.filter(slave=slave, skill=skill)
         elif isinstance(skill, str):
-            print("Looking for string")
+#            print("Looking for string")
             st = SkillTrained.objects.filter(slave=slave, skill__name=skill)
 
         return exp_to_lev(st.get().exp) if st else 0

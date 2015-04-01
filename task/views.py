@@ -1,8 +1,9 @@
+# FIXME
+# Should clean a lot of these includes!
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect, HttpResponseForbidden, Http404
 from django.views import generic
 from django.utils import timezone
-#from django_tables2.utils import RequestConfig 
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -10,12 +11,11 @@ from rest_framework import status
 from rest_framework import generics
 from rest_framework import permissions
 
-from task.models import Task, Assignment
 from task.serializers import TaskSerializer, AssignmentSerializer
 from task.tables import ActiveTaskTable
 
 from slave.logic import AssignmentError, TaskError
-
+from task.models import Task, Assignment
 from area.models import Region
 
 from sm_00.mixins import LoginRequiredMixin
@@ -44,7 +44,6 @@ class RegionTaskList(LoginRequiredMixin, generic.View):
             'tasks_available': tasks_query,
             }
         return render(request, 'task/region_running_task_list.html', result)
-        
 
 class ActiveTaskList(LoginRequiredMixin, generic.View):
     def get(self, request):
@@ -74,7 +73,6 @@ class ActiveTaskList(LoginRequiredMixin, generic.View):
         
         return render(request, 'task/task_list.html', result)
 
-
 class TaskDetail(LoginRequiredMixin, generic.DetailView):
     model = Task
 
@@ -90,7 +88,9 @@ class TaskDetail(LoginRequiredMixin, generic.DetailView):
         context['assignments'] = self.get_object().assignments.all()
         return context
 
-
+########
+# Below come new cool RESTful API views.
+#
 class API_TaskList(generics.ListCreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = TaskSerializer 
@@ -167,7 +167,7 @@ class API_TaskList(generics.ListCreateAPIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        
+
 class API_TaskDetail(LoginRequiredMixin, APIView):
     def get_object(self, pk):
         """ Get already authorized object."""
@@ -231,8 +231,8 @@ class API_TaskDetail(LoginRequiredMixin, APIView):
         # If smth went wrong with validation we return the errors in HTTP status 400.
         return Response("Error. No valid action specified.",
             status=status.HTTP_400_BAD_REQUEST)
-        
-        
+
+
 class API_AssignmentList(generics.ListCreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = AssignmentSerializer
@@ -276,7 +276,6 @@ class API_AssignmentList(generics.ListCreateAPIView):
          
         return assignment_list
 
-    
     def post(self, request, format=None):
         """ Save new assignment. """
         
@@ -297,10 +296,12 @@ class API_AssignmentList(generics.ListCreateAPIView):
         # are processed in serializer validators.
         if serializer.is_valid(request):
             serializer.save()
+            # Resave Task to automatically update estimated finish.
+            task.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        
+
 class API_AssignmentDetail(APIView):
     def get_object(self, pk):
         """ Get already authorized object."""
@@ -341,6 +342,8 @@ class API_AssignmentDetail(APIView):
             # We use asynchronous response "for the better future",
             # while actually we have already released the Assignment.
             if result:
+                # Resave Task to automatically update estimated finish.
+                assignment.task.save()
                 return Response("Success. Assignment was released.", 
                     status=status.HTTP_202_ACCEPTED)
             else:

@@ -28,7 +28,19 @@ class AssignmentSerializer(serializers.ModelSerializer):
             print("Owner of slave {0} is {1}, but owner of task {2} is {3}. Failed to assign!" \
                 .format(slave, slave.get_owner(), task, task.get_owner()))
             raise serializers.ValidationError("Authorization error for this Slave.")
-      
+
+    # Verify that Task is running.
+        if task.is_retrieved():
+            raise serializers.ValidationError("Assignment error. Task is finished and retrieved.")
+
+    # Verify that Task has open vacancy.
+        if not task.has_open_vacancy():
+            raise serializers.ValidationError("Assignment error. The maximum slaves are working on this task already.")
+
+    # Verify that Task location has free space.
+        if not task.has_free_space_in_location():
+            raise serializers.ValidationError("Assignment error. The Task Location is overcrowded.")
+            
     # Verify that Slave and Task are currently in the same Region.
         if not slave.get_location().get_region() == task.get_location().get_region():
             raise serializers.ValidationError("Region error. Slave is in wrong region.")
@@ -57,22 +69,20 @@ class AssignmentSerializer(serializers.ModelSerializer):
         else:
             raise serializers.ValidationError("Assignment error. Slave is not qualified for the task.")
 
-
-            
         return slave
     
-
 class TaskSerializer(serializers.ModelSerializer):
 #    assignments = AssignmentSerializer(many=True, read_only=False)
     _yield = serializers.FloatField(default=0.0)
     
     class Meta:
-#        _date_start = serializers.DateTimeField('_date_start') or timezone.now()
         model = Task
         fields = ('id', 'type', 'is_retrieved', 'location', 'owner', '_fulfilled', '_yield', 'get_date_start', 'get_date_finish')
         
-# FIXME NOW!
+# FIXME!
 # This fucks the task on PUT request. :)))
+# Never use PUT method to update anithing in Task.
+# Task interface should accept only "action".
     def validate__yield(self, value):
         """ Reset yield to zero if new Task posted. """
         # This is not critical if something is specified.
