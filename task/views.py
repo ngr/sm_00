@@ -247,6 +247,18 @@ class API_AssignmentList(generics.ListCreateAPIView):
         assignment_list = Assignment.objects.filter(task__owner=self.request.user)
 
 #        print(self.request.query_params)
+    # Filtering running Assignments.
+        # The default is to show all Assignments.
+        # You can add 'running' param to filter only non-finished ones,
+        # Or set it to False to get already released ones.
+        if 'running' in self.request.query_params:
+            running_request = self.request.query_params.get('running')
+            if running_request in ('True', 'true', '1', 'yes', ''):
+                print("Filter running Assignments")
+                assignment_list = assignment_list.filter(date_released__isnull=True)
+            elif running_request in ('False', 'false', '0', 'no'):
+                print("Filter released Assignments")
+                assignment_list = assignment_list.filter(date_released__isnull=True)
 
     # Filtering by Task
         if 'task' in self.request.query_params:

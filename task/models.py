@@ -672,6 +672,8 @@ class Assignment(models.Model):
 
     objects = AssignmentManager()
 
+    class Meta:
+        unique_together = (("slave", "date_released"),)
 
     def get_task(self):
         return self.task

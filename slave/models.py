@@ -130,8 +130,8 @@ class Slave(models.Model):
     """ This is the main unit in the game. """
     _name = models.CharField(max_length=127)
     _date_birth = models.DateTimeField('Date of birth')
-    _date_death = models.DateTimeField('Date of death', null=True)
-    _sex = models.NullBooleanField(choices=SEX_CHOICES, null=True )
+    _date_death = models.DateTimeField('Date of death', null=True, blank=True)
+    _sex = models.NullBooleanField(choices=SEX_CHOICES, null=True)
     _race = models.PositiveSmallIntegerField(choices=RACE_CHOICES, default=BLUE)
 
     _intelligence = models.PositiveSmallIntegerField(default=1,\

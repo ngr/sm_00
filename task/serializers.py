@@ -36,7 +36,13 @@ class AssignmentSerializer(serializers.ModelSerializer):
     # Verify that Slave is idle.
         if slave.get_assignments(active=True).count() > 0:
             raise serializers.ValidationError("Assignment error. Slave is busy.")
-        
+            
+    # Verify that Slave is of appropriate age.
+        if not slave.is_alive():
+            raise serializers.ValidationError("Assignment error. Slave is dead.")
+        if slave.is_baby():
+            raise serializers.ValidationError("Assignment error. Slave is too young.")
+            
     # Verify that Slave is qualified for this Task.
         slave_skills = slave.get_trained_skills()
 
