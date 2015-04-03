@@ -3,6 +3,14 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.views import generic
 from django.utils import timezone
+from django import forms
+
+from oauth2_provider.views.generic import ProtectedResourceView
+
+import urllib.request
+import json
+import codecs
+import requests
 
 from slave.models import Slave
 from slave.forms import AssignToTaskForm
@@ -34,7 +42,38 @@ class SlaveView(LoginRequiredMixin, generic.DetailView):
     def get_context_data(self, **kwargs):
         context = super(SlaveView, self).get_context_data(**kwargs)
         self.slave = get_object_or_404(Slave, pk=kwargs['object'].pk)
-        context['assign_form'] = AssignToTaskForm()
+    
+    # This is the form to assign Slave to any of available Tasks.
+        # Hide slave field. This not for security, just design improvement.
+        context['assign_form'] = AssignToTaskForm(initial={'slave': self.slave.id})
+        context['assign_form'].fields['slave'].widget = forms.HiddenInput()
+   
+        # Add values for Task.
+        
+        
+                
+        self.request.session['api_token'] = '9I5tyBgudXAavtml4BrOb3aKhhEPAa'
+#################        
+        payload = {
+                'format': 'json', 
+                'running': '1',                
+            }
+        auth_header = {
+                'Authorization': 'Bearer ' + self.request.session['api_token']
+            }
+        try:
+            r = requests.get('http://aws00.grischenko.ru:8000/api/task/',
+                headers=auth_header,
+                params=payload)
+            print ("Received JSON from Task App:", r.json())
+        except:
+            print("Error. Failed to get JSON from Task App.")
+                
+        # Add available tasks to context.
+        context['assign_form'].fields['task'].choices = []
+        for task in r.json():
+            context['assign_form'].fields['task'].choices.append((task['id'], task['get_name_readable']))
+
         return context
 
 def make_happy(request, sid):

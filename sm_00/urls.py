@@ -17,7 +17,11 @@ urlpatterns = patterns('',
     url(r'^item/', include('item.urls', namespace='item')),
 
     url(r'^api/', include('sm_00.apiurls', namespace='api')),
+    url(r'^a/hello', views.APIEndpoint.as_view()),  # and also a resource server!
+    url(r'^secret$', 'sm_00.views.secret_page', name='secret'),
 
+    
+    url(r'^o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
     url(r'^users/$', views.UserList.as_view()),
     url(r'^users/(?P<pk>[0-9]+)/$', views.UserDetail.as_view()),
 

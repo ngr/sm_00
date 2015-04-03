@@ -3,7 +3,7 @@ from django.utils import timezone
 from rest_framework import serializers
 from task.models import Task, TaskDirectory, Assignment
 from slave.models import Slave
-
+ 
 class AssignmentSerializer(serializers.ModelSerializer):
     
     class Meta:
@@ -77,7 +77,7 @@ class TaskSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Task
-        fields = ('id', 'type', 'is_retrieved', 'location', 'owner', '_fulfilled', '_yield', 'get_date_start', 'get_date_finish')
+        fields = ('get_name_readable', 'id', 'type', 'is_retrieved', 'location', 'owner', '_fulfilled', '_yield', 'get_date_start', 'get_date_finish')
         
 # FIXME!
 # This fucks the task on PUT request. :)))

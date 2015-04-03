@@ -154,7 +154,7 @@ class API_TaskList(generics.ListCreateAPIView):
         print("data: {0},  request: {1}".format(request.data.get('owner'), request.user.id))
         if int(request.data.get('owner')) != request.user.id:
             return Response("Authorization error for this task.",
-                status=status.HTTP_400_BAD_REQUEST)
+                status=status.HTTP_403_FORBIDDEN)
 
     # Serialize incoming data as a new Task.
         serializer = TaskSerializer(data=request.data)
@@ -168,7 +168,9 @@ class API_TaskList(generics.ListCreateAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class API_TaskDetail(LoginRequiredMixin, APIView):
+class API_TaskDetail(APIView):
+#    permission_classes = (permissions.IsAuthenticated,)
+
     def get_object(self, pk):
         """ Get already authorized object."""
         return Task.objects.get(pk=pk, owner=self.request.user)
@@ -178,7 +180,7 @@ class API_TaskDetail(LoginRequiredMixin, APIView):
             task = self.get_object(pk)
         except Task.DoesNotExist:
             return Response("Authorization error or wrong Task id.",
-                status=status.HTTP_400_BAD_REQUEST)
+                status=status.HTTP_403_FORBIDDEN)
  
         serializer = TaskSerializer(task)
         return Response(serializer.data)
@@ -194,7 +196,7 @@ class API_TaskDetail(LoginRequiredMixin, APIView):
             task = self.get_object(pk)
         except Task.DoesNotExist:
             return Response("Authorization error or wrong Task id.",
-                status=status.HTTP_400_BAD_REQUEST)
+                status=status.HTTP_403_FORBIDDEN)
 
         print(self.request.data)     
         
@@ -286,7 +288,7 @@ class API_AssignmentList(generics.ListCreateAPIView):
         task = Task.objects.get(pk=request.data['task'])
         if task.get_owner() != request.user:
             return Response("Authorization error for this task.",
-                status=status.HTTP_400_BAD_REQUEST)
+                status=status.HTTP_403_FORBIDDEN)
       
     # Serialize incoming data as a new assignment.
         serializer = AssignmentSerializer(data=request.data)
@@ -312,7 +314,7 @@ class API_AssignmentDetail(APIView):
             assignment = self.get_object(pk)
         except Assignment.DoesNotExist:
             return Response("Authorization error or wrong Assignment id.",
-                status=status.HTTP_400_BAD_REQUEST)
+                status=status.HTTP_403_FORBIDDEN)
  
         serializer = AssignmentSerializer(assignment)
         return Response(serializer.data)
@@ -328,7 +330,7 @@ class API_AssignmentDetail(APIView):
             assignment = self.get_object(pk)
         except Assignment.DoesNotExist:
             return Response("Authorization error or wrong Assignment id.",
-                status=status.HTTP_400_BAD_REQUEST)
+                status=status.HTTP_403_FORBIDDEN)
 
 #        print(self.request.data)     
         

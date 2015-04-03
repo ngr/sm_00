@@ -59,6 +59,9 @@ INSTALLED_APPS = (
     'sm_00',
     'talk',
     'rest_framework',
+    'oauth2_provider',
+    'corsheaders',
+
 )
 
 MIDDLEWARE_CLASSES = (
@@ -70,7 +73,31 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'talk.middleware.RequireLoginMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+
+    'oauth2_provider.middleware.OAuth2TokenMiddleware',
+
+    
 )
+AUTHENTICATION_BACKENDS = (
+    'oauth2_provider.backends.OAuth2Backend',
+    # Uncomment following if you want to access the admin
+    'django.contrib.auth.backends.ModelBackend',
+)
+
+REST_FRAMEWORK = {
+#    'DEFAULT_AUTHENTICATION_CLASSES': (
+#        'oauth2_provider.ext.rest_framework.OAuth2Authentication',
+#    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    )
+} 
+OAUTH2_PROVIDER = {
+    # this is the list of available scopes
+    'SCOPES': {'read': 'Read scope', 'write': 'Write scope', 'groups': 'Access to your groups'}
+}
+
 
 LOGIN_REQUIRED_URLS = (
     r'/talk/(.*)$',  # TODO interpret this regex.
@@ -144,3 +171,6 @@ CELERY_RESULT_SERIALIZER = 'json'
 
 # Authorization and Authentication
 LOGIN_REDIRECT_URL = '/'
+
+# FIXME This should be temporary for OAuth testing
+CORS_ORIGIN_ALLOW_ALL = True

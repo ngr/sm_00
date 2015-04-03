@@ -41,8 +41,41 @@
     </tr>
     {% endfor %}
 </table>
-<br><br>
 
+{% if slave.is_free %}
+<br><br>##############<br><br>
+<form action="http://aws00.grischenko.ru:8000/api/assignment/" method="post">
+    {% csrf_token %}
+        {{ assign_form }}
+        <input type="submit" value="Assign to Task" />    
+</form>
+{% endif %}
+
+
+<h3>Assignments</h3>
+<table class="task_table" width="800px">
+    <tr>
+        <th class="task_type_th">Type</th>
+        <th class="task_details_th">Details</th>
+        <th class="task_date_th">Start</th>
+        <th class="task_date_th">Finish</th>
+        <th class="task_flag_th">Finished</th>
+        <th class="task_flag_th">Retrieved</th>
+
+    </tr>
+    {% for task in slave.assignments.all %}
+    <tr>
+        <td class="task_type_td">{{ task.get_task.get_type }}</td>
+        <td class="task_details_td"></td>
+        <td class="task_date_td">{{ task.get_date_assigned}}</td>
+        <td class="task_date_td">{{ task.get_date_released }}</td>
+        <td class="task_flag_td">{{ task.get_task.is_finished }}</td>
+        <td class="task_flag_td">{{ task.get_task.is_retrieved }}</td>
+    </tr>
+    {% endfor %}
+</table>
+<br><br>
+# This is FOR DEBUG! Boosts exp to selected skill.
 <form action="{% url 'slave:set_skill' slave.id %}" method="post">
     {% csrf_token %}
     <input type="text" name="exp" id="exp" value="" />
@@ -54,9 +87,6 @@
 
         <input type="submit" value="Boost skill" />
 </form>
-
-{% if slave.is_free %}
-###############
 <br><br>
 <div class="row white">
     <div class="large-12 columns">
@@ -91,45 +121,6 @@
     </div>
 </div>
 
-
-
-<br><br>##############<br><br>
-<form action="{% url 'slave:assign_task' slave.id %}" method="post">
-    {% csrf_token %}
-        {{ assign_form }}
-        <input type="submit" value="Submit" />    
-</form>
-{% endif %}
-
-<h3>Assignments</h3>
-<table class="task_table" width="800px">
-    <tr>
-        <th class="task_type_th">Type</th>
-        <th class="task_details_th">Details</th>
-        <th class="task_date_th">Start</th>
-        <th class="task_date_th">Finish</th>
-        <th class="task_flag_th">Finished</th>
-        <th class="task_flag_th">Retrieved</th>
-
-    </tr>
-    {% for task in slave.assignment_set.all %}
-    <tr>
-        <td class="task_type_td">{{ task.get_task.get_type }}</td>
-        <td class="task_details_td"></td>
-        <td class="task_date_td">{{ task.get_date_assigned}}</td>
-        <td class="task_date_td">{{ task.get_date_released }}</td>
-        <td class="task_flag_td">{{ task.get_task.is_finished }}</td>
-        <td class="task_flag_td">{{ task.get_task.is_retrieved }}</td>
-    </tr>
-    {% endfor %}
-</table>
-<br><br>
-
-<form action="{% url 'slave:assign_task' slave.id %}" method="post">
-{% csrf_token %}
-    <input>
-
-</form>
 
 <br><br>
 

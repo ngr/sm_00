@@ -16,8 +16,20 @@ from rest_framework.reverse import reverse
 from rest_framework import status
 from rest_framework import generics
 
+from oauth2_provider.views.generic import ProtectedResourceView
+from django.contrib.auth.decorators import login_required
+
 from sm_00.serializers import UserSerializer
 from django.contrib.auth.models import User
+
+@login_required()
+def secret_page(request, *args, **kwargs):
+    result = "Successfully authenticated as " + str(request.user) +"\n"
+    return HttpResponse(result, status=200)
+
+class APIEndpoint(ProtectedResourceView):
+    def get(self, request, *args, **kwargs):
+        return HttpResponse('Hello, OAuth2!')
 
 
 @api_view(('GET',))

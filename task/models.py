@@ -328,7 +328,7 @@ class BuildingTaskDirectory(TaskDirectory):
     def get_material(self):
         return self.material
 
-
+ 
 class Task(models.Model):
     _date_start  = models.DateTimeField()
     _date_finish = models.DateTimeField()
@@ -349,6 +349,10 @@ class Task(models.Model):
     def __str__(self):
         return " - ".join([str(self.id), str(self.type.get_type_readable())])
 
+    def get_name_readable(self):
+        """ Return string name to show Task name in API. """
+        return " - ".join([str(self.id), str(self.type.get_type_readable())])
+        
     def get_type(self):
         return self.type
 
