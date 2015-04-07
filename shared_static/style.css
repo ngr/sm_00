@@ -67,6 +67,8 @@ th.task_flag_th, td.task_flag_td {
     color: darkgreen;
 }
 
-
-
-
+.control-group
+{
+    padding-left:10px;
+    width: 451px;
+}

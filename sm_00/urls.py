@@ -11,14 +11,15 @@ urlpatterns = patterns('',
     url(r'^slave/', include('slave.urls', namespace='slave')),
     url(r'^area/', include('area.urls', namespace='area')),
     url(r'^task/', include('task.urls', namespace='task')),
-    url(r'^accounts/login/$', 'django.contrib.auth.views.login'),
+#    url(r'^accounts/login/$', 'django.contrib.auth.views.login'),
+    url(r'^accounts/login/$', 'sm_00.views.SlaveMasterLogin'),
     url(r'^accounts/logout/$', 'django.contrib.auth.views.logout', {'next_page': '/'}),
     url(r'^talk/', include('talk.urls', namespace='talk')),
     url(r'^item/', include('item.urls', namespace='item')),
 
     url(r'^api/', include('sm_00.apiurls', namespace='api')),
     url(r'^a/hello', views.APIEndpoint.as_view()),  # and also a resource server!
-    url(r'^secret$', 'sm_00.views.secret_page', name='secret'),
+    url(r'^a/login', 'sm_00.views.SlaveMasterLogin', name='login'),
 
     
     url(r'^o/', include('oauth2_provider.urls', namespace='oauth2_provider')),

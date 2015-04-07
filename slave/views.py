@@ -1,3 +1,4 @@
+# SLAVE VIEWS #
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
@@ -50,16 +51,16 @@ class SlaveView(LoginRequiredMixin, generic.DetailView):
    
         # Add values for Task.
         
-        
-                
-        self.request.session['api_token'] = '9I5tyBgudXAavtml4BrOb3aKhhEPAa'
+        if not self.request.session['access_token']:
+        # FIXME Should automatically offer to relogin
+            return context
 #################        
         payload = {
                 'format': 'json', 
                 'running': '1',                
             }
         auth_header = {
-                'Authorization': 'Bearer ' + self.request.session['api_token']
+                'Authorization': 'Bearer ' + self.request.session['access_token']
             }
         try:
             r = requests.get('http://aws00.grischenko.ru:8000/api/task/',
