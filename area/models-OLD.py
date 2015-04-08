@@ -1,9 +1,9 @@
-### Area application Models ###
+### OLD Area application Models ###
 from django.db import models
 from django.db.models import Sum
 from django.utils import timezone
 from django.core.validators import MaxValueValidator, MinValueValidator
-#from operator import itemgetter, attrgetter, methodcaller
+from operator import itemgetter, attrgetter, methodcaller
 import datetime
 
 from item.models import Item
@@ -37,50 +37,143 @@ class Region(models.Model):
 
     objects = RegionManager()
 
-    def __str__(self):
-        """ Return name of Region. """
-        return self._name
-
-    def get_name(self):
-        """ Return name of Region. """
-        return self._name
-
-    def get_area(self):
-        """ Return area of Region. """
-        return self._area
-
     def get_free_area(self):
-        """ Return free area not assigned to Locations. """
-        return self._area - self.locations.all().aggregate(Sum('_area'))['_area__sum']
-    
+        """ Return free area not assigned to locations. """
+        return self._area - self.location_set.all().aggregate(Sum('_area'))['_area__sum']
+
     def get_owner(self):
         """ Return the current owner of the Region. """
         return self.owner
 
+    def auth_allowed(self, user):
+        """ Check permissions to access object. """
+        return self.get_owner() == user
+
+    def get_slaves(self, withdead=False, free=False, by_districts=False):
+        """ List of slaves currently living in HousingDistricts of the Region. """
+        inhabitants = {}
+        districts = self.get_housing()
+        for d in districts:
+            if withdead:
+                inhabitants[d] = d.housingdistrict.get_inhabitants(withdead=True)
+            else:
+                inhabitants[d] = d.housingdistrict.get_inhabitants()
+#        print(inhabitants)
+
+        if by_districts:
+            for k, v in inhabitants.items():
+                inhabitants[k] = [s for s in v if s.is_free()]
+            
+        else:
+            temp = []
+            for k, v in inhabitants.items():
+                temp += v
+#            print(temp)
+            inhabitants = temp
+            if free:
+                inhabitants = [s for s in inhabitants if s.is_free()]      
+        return inhabitants
+     
+#    def get_slaves_count(self, withdead=False):
+#        """ List of slaves currently located in Region """
+#        return self.slave_set.all().filter(date_death__isnull=True).count() if not withdead\
+#            else self.slave_set.all().count()
+
+    def get_housing(self, district=False):
+        """ Show housing statistics for Region. """
+        locations = self.location_set.all()
+#       print(locations)
+        districts = {}
+        for l in locations:
+            if hasattr(l, 'housingdistrict'):
+                districts[l] = {}
+                districts[l]['area'] = l.get_area()
+                districts[l]['comfort'] = l.housingdistrict.get_comfort()
+                districts[l]['inhabitants'] = l.housingdistrict.get_inhabitants_count()
+                districts[l]['free'] = l.housingdistrict.get_free_beds()
+#        print(districts)
+        return districts
+
+    def get_farming_areas(self):
+        """ Show farming statistics for Region """
+    # We may want to make universal function for different types of locations
+        locations = self.location_set.all()
+        districts = {}
+        for l in locations:
+            if hasattr(l, 'farmingfield'):
+                districts[l] = {}
+                districts[l]['area'] = l.get_area()
+        return districts
+
+
+    def find_house_for_slave(self):
+        """ Find best HousingDistrict. """
+        housing = self.get_housing()
+        housing = sorted(housing.items(), key=lambda k_v: k_v[1]['comfort'], reverse=True)
+
+        if len(housing) == 0 or housing[0][1]['free'] == 0:
+            print("No housing available in Region!")
+            return False
+        else:
+            print("Housing in %s with comfort %s. Inhabs %s, free %s" % (housing[0][0].housingdistrict, housing[0][1]['comfort'], housing[0][1]['inhabitants'], housing[0][1]['free']))
+            return housing[0][0].housingdistrict
+
     def get_locations(self):
-        """ Return all Locations of Region. """
-        # Foreign key from Location model.
-        return self.locations.all()
-    
-    def get_items(self):
-        """ Get Items stored in Region Warehouse. """
-        # Foreign key from Warehouse model.
-        return self.items.all()
+        """ Return all locations of region """
+        return self.location_set.all()
+
+    def __str__(self):
+        return self._name
+
+
+    def put_to_warehouse(self, item, amount=1):
+        """ This is the main entry function to put items to Region warehouses """
+        wh = self.warehouse_set.last()
+        print("Putting {2} of {1} to warehouse {3} in region {0}".format(self, item, amount, wh))
+        wh.put(item, amount)
+
+    def get_item_list(self, itype=None):
+        """ Return items from region warehouses """
+        # Accumulate info to result
+        result = []
+        # Get items from each Warehouse
+        for warehouse in self.warehouse_set.all():
+            print(warehouse)
+            new_item = warehouse.get_item_list(itype)
+        # Function can return a single object or a list
+            print(type(new_item))
+            if isinstance(new_item, (list, tuple)):
+                result.extend(new_item)
+            elif isinstance(new_item, Item):
+                result.append(new_item)
+
+        # FIXME process result to accumulate similar items from different warehouses
+        # return processed result
+        print(result)
+        return result
         
-    ###############
-    # SET methods #
+    def create_location(self, type, name=None, area=None):
     
-    def set_name(self, name=''):
-        """ Set a new name of Region. """
-        self._name = name
-
-#########        
-
+        if type == 'farmingfield':
+            new_location = FarmingField(region=self)
+        elif type == 'workshop':
+            new_location = Workshop(region=self)
+        elif type == 'housingdistrict':
+            new_location = HousingDistrict(region=self)
+        
+        if name:
+            new_location.set_name(name)
+        if area:
+            new_location.set_area(area)
+        
+        new_location.save()
+        return
+    
 
 class BuildingType(models.Model):
-    """ This is actually "Location" type. """
     _name       = models.CharField(max_length=127)
     
+
     def __str__(self):
         return self._name
 
@@ -190,6 +283,7 @@ class HousingDistrict(Location):
         """ Return the number of space left for maximum density beds """
         return int(self.get_area() / MIN_BED_AREA - self.get_inhabitants_count())
 
+
 class Workshop(Location):
     """ This is the Location to craft and build in. """
     
@@ -201,28 +295,42 @@ class Workshop(Location):
         """ Get number of Slaves assigned to task in this building. """
         return self.assignment_set.all().count()
 
-class Warehouse(models.Model):
-    """ Warehouse is a 'Bridge' model for Items, Assignments and Regions.
-    Each Item can be located in a single Region. 
-    It can be free or used in any Assignments within the Region. """
+
+##############
+# Warehouses #
+##############
+
+#class WHM(models.Manager):
     
-    region = models.ForeignKey(Region, related_name='items')
-    item   = models.ForeignKey('item.Item', related_name='warehouse')
-    assignment = models.ForeignKey('task.Assignment', related_name='tool', null=True, default=None)
+#    def get_warehouse(self, region, whtype=None):
+#        wh = self.all().filter(_building___region=region).all()
+#        return wh
+
+
+class Warehouse(models.Model):
+#    _name   = models.CharField(max_length=127)
+    _region = models.ForeignKey(Region)
+#    _name   = models.CharField(max_length=127, choices=ITEM_TYPES)
+
+# One day we shall add limit of storage available in Warehouse
 
     def __str__(self):
-        return ' '.join([str(self.region), 'Warehouse'])
+        return ' '.join([str(self._region), 'Warehouse'])
 
-    def get_items(self, itype=None):
-        """ Get items optionally filtered by itype. """
-        print(" ".join(["itype for area.Warehouse.get_item_list() is:", str(itype)]))
-        q = self.objects.all()
-        # FIXME! Process strings and validate input.
-        if itype:
-            q = q.filter(item__itype=itype)
-        return q
-    
-    """
+#    def get_type(self):
+#        return self._type
+
+#    class Meta:
+#        unique_together = (('_region', '_type'))
+
+    def get_item_list(self, itype):
+#        print(" ".join(["itype for area.Warehouse.get_item_list() is:", str(itype)]))
+        return list(Item.objects.get_items_of_type(itype=itype, warehouse=self))
+
+
+
+        #return self.item_set.objects.get_items_of_type(itype=itype, warehouse=self)
+
     def put(self, item, amount=1):
         print("Putting {2} of {1} to the warehouse {0}".format(self, item, amount))
         
@@ -241,7 +349,7 @@ class Warehouse(models.Model):
                     _date_init=next_game_period(GAME_MONTH),
                     _warehouse=self)
             i.save()
-    """
+
 
 
 #class Warehouse(models.Model):

@@ -1,3 +1,4 @@
+# ITEM application models #
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
@@ -129,7 +130,7 @@ class ItemManager(models.Manager):
 
 # FIXME! Need to check validity of building here
         if warehouse:
-            kwargs['_warehouse'] = warehouse
+            kwargs['warehouse'] = warehouse
 
         if not args and not kwargs:
             raise AttributeError("Valid itype or warehouse is required for get_items_of_type().")
@@ -142,7 +143,8 @@ class Item(models.Model):
     _itype   = models.ForeignKey(ItemDirectory)
     _amount  = models.PositiveIntegerField(default=1)
     _date_init = models.DateTimeField()
-    _warehouse = models.ForeignKey('area.Warehouse')
+#    warehouse = models.ForeignKey('area.Warehouse', related_name='item')
+    # This is done with other way ForeignKey
 
     objects = ItemManager()
 
@@ -160,7 +162,7 @@ class Item(models.Model):
         return self._date_init
 
     def get_warehouse(self):
-        return self._warehouse
+        return self.warehouse
 
 #########################################
     def put(self, amount=1):
@@ -235,33 +237,3 @@ class ItemJoffreyList(models.Model):
     item        = models.ForeignKey(Item, unique=True)
     execution_time   = models.DateTimeField()
     reason      = models.CharField(max_length=255, blank=True)
-
-
-
-"""class Food(Item):
-    _instance_date_expire = models.DateTimeField(null=True) 
-    _instance_taste = models.PositiveIntegerField(default=0)
-    _instance_satiety = models.PositiveIntegerField(default=0)
-
-    def __str__(self):
-        return ' '.join([str(self._itype), str(self._amount)])
-
-    def get_extra(self, param):
-        p = '_instance_' + clean_string_lower(param)
-        return getattr(self, p)
-
-    def set_expire(self):
-        self._date_expire = timezone.now() + datetime.timedelta(seconds=self._itype.get_shelf_life())
-
-#    def __init__(self):
-#        self._date_expire = timezone.now() + datetime.timedelta(seconds=self._itype.get_shelf_life())
-
-
-class Material(Item):
-    _density = models.PositiveIntegerField(default=0)
-
-    def __str__(self):
-        return ' '.join([str(self._itype), str(self._density)])
-"""
-
-

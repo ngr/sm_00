@@ -1,3 +1,4 @@
+# AREA Views #
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect, HttpResponseForbidden
 from django.core.urlresolvers import reverse

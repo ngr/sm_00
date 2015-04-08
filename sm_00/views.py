@@ -45,8 +45,8 @@ def SlaveMasterLogin(request):
         # Generate Token
               # I tried to use several libs to control tokens. They sucked.
               # So here is a MANUAL temporary token retrieve method.
-                application_id = "tTq4ZHNm5cS0vJk7Zq8IL6edRio5pNm03My7IPIg"
-                application_secret = "EK2lNGLCHXgdzEPncA8JSzkDah6Xb7Xjd1I88J4jurHQ0jI8JfrioeBqmBoLyIsR0eVgEw3rzXBkBOFrD9zsDdDaUPKdvmq6n8LwoEhss2sDOpbrAhONx6qJNBw85Q7S"
+                application_id = "hkREDi801GL9cwp7SyMeUQmFnpHlQyyO1PkOF0QW"
+                application_secret = "9jo9OxzpFKHBKun8prOgIIXvigcpUFhY9ZRoivEYZoQC5jVIzPLIZheeoVGE8D6xcm86LMlxcNJEOP2YIGBtIBW7UlCFVwOPhvZp75D4VQormzrBImjBKHkSUiRDqTXN"
                 token_url = 'http://aws00.grischenko.ru:8000/o/token/'   
               
               # This is authorization for new token generation.

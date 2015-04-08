@@ -118,7 +118,7 @@ WSGI_APPLICATION = 'sm_00.wsgi.application'
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
 
 DATABASES = {
-    'default': {
+    'old': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'dj_sm_00',
         'HOST': '127.0.0.1',
@@ -133,7 +133,15 @@ DATABASES = {
         'USER': 'dj_dbuser',
         'PASSWORD': 'P@ssw0rd',
         'PORT': '3306',
-    }
+    },
+        'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'dj_sm_00',
+        'HOST': 'rds-sm-00.cjlhgo3mq7ui.us-west-2.rds.amazonaws.com',
+        'USER': 'dj_dbuser',
+        'PASSWORD': 'P@ssw0rd',
+        'PORT': '3306',
+    },
 }
 
 #DATABASE_ROUTERS = ['task.dbRouter.AppSpecificDBRouter']

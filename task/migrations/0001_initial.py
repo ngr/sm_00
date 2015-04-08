@@ -8,21 +8,21 @@ from django.conf import settings
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('item', '0001_initial'),
-        ('skill', '0001_initial'),
-        ('area', '0001_initial'),
-        ('slave', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ('slave', '0001_initial'),
+        ('area', '0001_initial'),
+        ('skill', '0001_initial'),
+        ('item', '0001_initial'),
     ]
 
     operations = [
         migrations.CreateModel(
             name='Assignment',
             fields=[
-                ('id', models.AutoField(serialize=False, auto_created=True, primary_key=True, verbose_name='ID')),
-                ('_date_assigned', models.DateTimeField()),
-                ('_date_released', models.DateTimeField(null=True)),
-                ('slave', models.ForeignKey(to='slave.Slave')),
+                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
+                ('date_assigned', models.DateTimeField()),
+                ('date_released', models.DateTimeField(null=True)),
+                ('slave', models.ForeignKey(to='slave.Slave', related_name='assignments')),
             ],
             options={
             },
@@ -31,13 +31,14 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Task',
             fields=[
-                ('id', models.AutoField(serialize=False, auto_created=True, primary_key=True, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
                 ('_date_start', models.DateTimeField()),
                 ('_date_finish', models.DateTimeField()),
                 ('_retrieved', models.BooleanField(default=False)),
                 ('_yield', models.FloatField(default=0.0)),
-                ('_location', models.ForeignKey(to='area.Location')),
-                ('_owner', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
+                ('_fulfilled', models.FloatField(default=0.0)),
+                ('location', models.ForeignKey(to='area.Location')),
+                ('owner', models.ForeignKey(to=settings.AUTH_USER_MODEL, related_name='tasks')),
             ],
             options={
             },
@@ -46,9 +47,9 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='TaskDirectory',
             fields=[
-                ('id', models.AutoField(serialize=False, auto_created=True, primary_key=True, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
                 ('_name', models.CharField(max_length=127)),
-                ('_location_type', models.CharField(blank=True, choices=[('farmingfield', 'Farming Field'), ('housingdistrict', 'Housing District')], max_length=127)),
+                ('_location_type', models.CharField(max_length=127, blank=True, choices=[('farmingfield', 'Farming Field'), ('housingdistrict', 'Housing District'), ('workshop', 'Workshop')])),
                 ('_area_per_worker', models.PositiveIntegerField(default=1)),
                 ('_min_slaves', models.PositiveIntegerField(default=1)),
                 ('_max_slaves', models.PositiveIntegerField(default=1)),
@@ -60,7 +61,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='FarmingTaskDirectory',
             fields=[
-                ('taskdirectory_ptr', models.OneToOneField(serialize=False, parent_link=True, to='task.TaskDirectory', primary_key=True, auto_created=True)),
+                ('taskdirectory_ptr', models.OneToOneField(auto_created=True, parent_link=True, serialize=False, to='task.TaskDirectory', primary_key=True)),
                 ('_base_yield', models.PositiveSmallIntegerField(default=1)),
                 ('_exec_time', models.PositiveSmallIntegerField(default=1)),
                 ('_yield_item', models.ForeignKey(to='item.ItemDirectory')),
@@ -69,10 +70,34 @@ class Migration(migrations.Migration):
             },
             bases=('task.taskdirectory',),
         ),
+        migrations.CreateModel(
+            name='CraftingTaskDirectory',
+            fields=[
+                ('taskdirectory_ptr', models.OneToOneField(auto_created=True, parent_link=True, serialize=False, to='task.TaskDirectory', primary_key=True)),
+                ('_work_units', models.PositiveIntegerField(default=1)),
+                ('ingredient', models.ManyToManyField(through='item.ItemRecipe', to='item.ItemDirectory')),
+                ('item', models.ForeignKey(to='item.ItemDirectory', related_name='yeild_item')),
+            ],
+            options={
+            },
+            bases=('task.taskdirectory',),
+        ),
+        migrations.CreateModel(
+            name='BuildingTaskDirectory',
+            fields=[
+                ('taskdirectory_ptr', models.OneToOneField(auto_created=True, parent_link=True, serialize=False, to='task.TaskDirectory', primary_key=True)),
+                ('_work_units', models.PositiveIntegerField(default=1)),
+                ('building', models.ForeignKey(to='area.BuildingType')),
+                ('material', models.ManyToManyField(through='area.BuildingMaterialRecipe', to='item.MaterialDirectory')),
+            ],
+            options={
+            },
+            bases=('task.taskdirectory',),
+        ),
         migrations.AddField(
             model_name='taskdirectory',
             name='_primary_skill',
-            field=models.ForeignKey(related_name='+', to='skill.Skill'),
+            field=models.ForeignKey(to='skill.Skill', related_name='+'),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -83,14 +108,18 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='task',
-            name='_type',
+            name='type',
             field=models.ForeignKey(to='task.TaskDirectory'),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='assignment',
             name='task',
-            field=models.ForeignKey(to='task.Task'),
+            field=models.ForeignKey(to='task.Task', related_name='assignments'),
             preserve_default=True,
+        ),
+        migrations.AlterUniqueTogether(
+            name='assignment',
+            unique_together=set([('slave', 'date_released')]),
         ),
     ]
