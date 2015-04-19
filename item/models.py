@@ -95,7 +95,7 @@ class FoodDirectory(ItemDirectory):
 
 class ItemRecipe(models.Model):
     """ Recipes of materials required to craft items. """
-    task_type   = models.ForeignKey('task.CraftingTaskDirectory', related_name='task_type')
+    task_type   = models.ForeignKey('task.CraftingTaskDirectory')
     ingredient  = models.ForeignKey(ItemDirectory, related_name='ingredient')
     _amount     = models.PositiveIntegerField(default=1)
     

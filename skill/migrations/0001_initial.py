@@ -15,11 +15,11 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Skill',
             fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
+                ('id', models.AutoField(serialize=False, primary_key=True, verbose_name='ID', auto_created=True)),
                 ('name', models.CharField(max_length=127)),
                 ('primary_attribute', models.PositiveSmallIntegerField(choices=[(0, 'Intelligence'), (1, 'Strength'), (2, 'Agility'), (3, 'Charisma')])),
                 ('difficulty', models.PositiveSmallIntegerField(default=1)),
-                ('required_skills', models.ManyToManyField(null=True, to='skill.Skill')),
+                ('required_skills', models.ManyToManyField(to='skill.Skill', null=True)),
             ],
             options={
             },
@@ -28,8 +28,8 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='SkillTrained',
             fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
-                ('exp', models.PositiveIntegerField(default=1, validators=[django.core.validators.MinValueValidator(0)])),
+                ('id', models.AutoField(serialize=False, primary_key=True, verbose_name='ID', auto_created=True)),
+                ('exp', models.PositiveIntegerField(validators=[django.core.validators.MinValueValidator(0)], default=1)),
                 ('skill', models.ForeignKey(to='skill.Skill')),
                 ('slave', models.ForeignKey(to='slave.Slave')),
             ],

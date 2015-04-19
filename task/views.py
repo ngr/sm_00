@@ -183,7 +183,7 @@ class API_TaskDetail(APIView):
                 status=status.HTTP_403_FORBIDDEN)
  
         serializer = TaskSerializer(task)
-        return Response(serializer.data)
+        return Response(serializer.data) 
 
     def put(self, request, pk, format=None):
         """ PUT method is used to call built-in METHODS on existing Task object. """

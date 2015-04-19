@@ -120,9 +120,9 @@ class TaskManager(models.Manager):
         return self.filter(*args, **kwargs)
         
 class TaskDirectory(models.Model):
-    _name   = models.CharField(max_length=127)
-    _location_type = models.CharField(max_length=127, choices=LOCATION_TYPES, blank=True)
-    _area_per_worker = models.PositiveIntegerField(default=1)
+    name   = models.CharField(max_length=127)
+    location_type = models.ForeignKey('area.LocationDirectory')
+    area_per_worker = models.PositiveIntegerField(default=1)
 
     _min_slaves = models.PositiveIntegerField(default=1)
     _max_slaves = models.PositiveIntegerField(default=1)
@@ -135,7 +135,7 @@ class TaskDirectory(models.Model):
     # FIXME Need some Meta here for exec_time or exec_work to be null. Not together.
 
     def __str__(self):
-        return "{0}: {1}".format(self.get_type_readable(), self._name)
+        return "{0}: {1}".format(self.get_type_readable(), self.name)
 
 
     def get_type(self):
@@ -191,10 +191,10 @@ class TaskDirectory(models.Model):
 
     """ Basic get() methods for TaskDirectory instance properties """
     def get_location_type(self):
-        return self._location_type
+        return self.location_type
 
     def get_area_per_worker(self):
-        return self._area_per_worker
+        return self.area_per_worker
 
     def get_min_slaves(self):
         return self._min_slaves
@@ -304,13 +304,21 @@ class CraftingTaskDirectory(TaskDirectory):
     def get_work_units(self):
         return self._work_units    
 
+class BuildingMaterialRecipe(models.Model):
+    """ Recipes of materials required to construct buildings. """
+
+    task_type   = models.ForeignKey('task.BuildingTaskDirectory')
+    material    = models.ForeignKey('item.MaterialDirectory')
+    _amount     = models.PositiveIntegerField(default=1)
+
+        
 class BuildingTaskDirectory(TaskDirectory):
     """ General subtype of building task types. """
 
     _work_units  = models.PositiveIntegerField(default=1)
     
-    building  = models.ForeignKey('area.BuildingType')
-    material  = models.ManyToManyField('item.MaterialDirectory', through='area.BuildingMaterialRecipe', through_fields=('task_type', 'material'))
+    building  = models.ForeignKey('area.LocationDirectory')
+    material  = models.ManyToManyField('item.MaterialDirectory', through='task.BuildingMaterialRecipe', through_fields=('task_type', 'material'))
 
     """ Basic get() methods for CraftingTaskDirectory properties. """
     def __str__(self):

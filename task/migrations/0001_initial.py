@@ -8,18 +8,18 @@ from django.conf import settings
 class Migration(migrations.Migration):
 
     dependencies = [
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('slave', '0001_initial'),
-        ('area', '0001_initial'),
         ('skill', '0001_initial'),
         ('item', '0001_initial'),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ('area', '0001_initial'),
+        ('slave', '0001_initial'),
     ]
 
     operations = [
         migrations.CreateModel(
             name='Assignment',
             fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
+                ('id', models.AutoField(serialize=False, primary_key=True, verbose_name='ID', auto_created=True)),
                 ('date_assigned', models.DateTimeField()),
                 ('date_released', models.DateTimeField(null=True)),
                 ('slave', models.ForeignKey(to='slave.Slave', related_name='assignments')),
@@ -29,9 +29,20 @@ class Migration(migrations.Migration):
             bases=(models.Model,),
         ),
         migrations.CreateModel(
+            name='BuildingMaterialRecipe',
+            fields=[
+                ('id', models.AutoField(serialize=False, primary_key=True, verbose_name='ID', auto_created=True)),
+                ('_amount', models.PositiveIntegerField(default=1)),
+                ('material', models.ForeignKey(to='item.MaterialDirectory')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
             name='Task',
             fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
+                ('id', models.AutoField(serialize=False, primary_key=True, verbose_name='ID', auto_created=True)),
                 ('_date_start', models.DateTimeField()),
                 ('_date_finish', models.DateTimeField()),
                 ('_retrieved', models.BooleanField(default=False)),
@@ -47,10 +58,9 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='TaskDirectory',
             fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
-                ('_name', models.CharField(max_length=127)),
-                ('_location_type', models.CharField(max_length=127, blank=True, choices=[('farmingfield', 'Farming Field'), ('housingdistrict', 'Housing District'), ('workshop', 'Workshop')])),
-                ('_area_per_worker', models.PositiveIntegerField(default=1)),
+                ('id', models.AutoField(serialize=False, primary_key=True, verbose_name='ID', auto_created=True)),
+                ('name', models.CharField(max_length=127)),
+                ('area_per_worker', models.PositiveIntegerField(default=1)),
                 ('_min_slaves', models.PositiveIntegerField(default=1)),
                 ('_max_slaves', models.PositiveIntegerField(default=1)),
             ],
@@ -61,7 +71,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='FarmingTaskDirectory',
             fields=[
-                ('taskdirectory_ptr', models.OneToOneField(auto_created=True, parent_link=True, serialize=False, to='task.TaskDirectory', primary_key=True)),
+                ('taskdirectory_ptr', models.OneToOneField(parent_link=True, serialize=False, to='task.TaskDirectory', auto_created=True, primary_key=True)),
                 ('_base_yield', models.PositiveSmallIntegerField(default=1)),
                 ('_exec_time', models.PositiveSmallIntegerField(default=1)),
                 ('_yield_item', models.ForeignKey(to='item.ItemDirectory')),
@@ -73,9 +83,9 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='CraftingTaskDirectory',
             fields=[
-                ('taskdirectory_ptr', models.OneToOneField(auto_created=True, parent_link=True, serialize=False, to='task.TaskDirectory', primary_key=True)),
+                ('taskdirectory_ptr', models.OneToOneField(parent_link=True, serialize=False, to='task.TaskDirectory', auto_created=True, primary_key=True)),
                 ('_work_units', models.PositiveIntegerField(default=1)),
-                ('ingredient', models.ManyToManyField(through='item.ItemRecipe', to='item.ItemDirectory')),
+                ('ingredient', models.ManyToManyField(to='item.ItemDirectory', through='item.ItemRecipe')),
                 ('item', models.ForeignKey(to='item.ItemDirectory', related_name='yeild_item')),
             ],
             options={
@@ -85,10 +95,10 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='BuildingTaskDirectory',
             fields=[
-                ('taskdirectory_ptr', models.OneToOneField(auto_created=True, parent_link=True, serialize=False, to='task.TaskDirectory', primary_key=True)),
+                ('taskdirectory_ptr', models.OneToOneField(parent_link=True, serialize=False, to='task.TaskDirectory', auto_created=True, primary_key=True)),
                 ('_work_units', models.PositiveIntegerField(default=1)),
-                ('building', models.ForeignKey(to='area.BuildingType')),
-                ('material', models.ManyToManyField(through='area.BuildingMaterialRecipe', to='item.MaterialDirectory')),
+                ('building', models.ForeignKey(to='area.LocationDirectory')),
+                ('material', models.ManyToManyField(to='item.MaterialDirectory', through='task.BuildingMaterialRecipe')),
             ],
             options={
             },
@@ -103,13 +113,25 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='taskdirectory',
             name='_secondary_skill',
-            field=models.ManyToManyField(related_name='+', to='skill.Skill'),
+            field=models.ManyToManyField(to='skill.Skill', related_name='+'),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='taskdirectory',
+            name='location_type',
+            field=models.ForeignKey(to='area.LocationDirectory'),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='task',
             name='type',
             field=models.ForeignKey(to='task.TaskDirectory'),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='buildingmaterialrecipe',
+            name='task_type',
+            field=models.ForeignKey(to='task.BuildingTaskDirectory'),
             preserve_default=True,
         ),
         migrations.AddField(

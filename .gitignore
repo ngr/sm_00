@@ -2,6 +2,11 @@ __pycache__
 slave/__pycache__/**
 slave/management/commands/__pycache__/**
 slave/migrations/**
+area/migrations/**
+task/migrations/**
+item/migrations/**
+skill/migrations/**
+
 sm_00/__pycache__/**
 task/__pycache__/**
 skill/__pycache__/**

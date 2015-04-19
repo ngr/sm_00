@@ -6,3 +6,8 @@ class AssignmentError(Exception):
 class TaskError(Exception):
     """ Task assignment exception """
     pass
+
+class AreaError(Exception):
+    """ Area Logic exception """
+    pass
+    

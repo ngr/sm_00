@@ -10,7 +10,7 @@ from django.core.files.storage import FileSystemStorage
 from slave.settings import *
 from slave.helpers import *
 
-from area.models import HousingDistrict, Location, Region
+from area.models import Location, Region
 from skill.models import Skill, SkillTrained
 from task.models import Assignment, Task, TaskDirectory as TD
 
@@ -148,7 +148,7 @@ class Slave(models.Model):
     _satiety = models.PositiveSmallIntegerField(default=0,\
             validators=[MinValueValidator(0), MaxValueValidator(100)])
 
-    location = models.ForeignKey(HousingDistrict, null=False)
+    location = models.ForeignKey(Location, null=False)
     owner   = models.ForeignKey('auth.User', related_name='slaves', default=1)
 
     objects = SlaveManager()
@@ -318,34 +318,6 @@ class Slave(models.Model):
 
 ########################
 # Slave update
-    def house(self, region):
-        """ House the slave to the given region """
-      # If the region is given as Integer treat it as Region id.  
-        if isinstance(region, int):
-          # Try to find Region with this ID
-            try:
-                region = Region.objects.get(pk=region)
-          # In case of problems just return False. This is not critical.          
-            except  :
-                print("Slave->set_location() could not find region {0}.".format(region))
-                return False
-      # In case of problems just return False. This is not critical.
-        elif not isinstance(region, Region):
-            print("Slave->set_location() received a wrong _region_ value. Either integer or Region accepted.")
-            return False
-      
-      # This is cool script to find the best housing district in Region.
-        try:
-            loc = region.find_house_for_slave()
-      # In case of problems just return False. This is not critical.
-        except:
-            print("Could not house %s to region %s" % (self, region))
-            return False
-
-      # If all is OK. We set Slave location to the one received from script.
-        if loc:
-            self.location = loc
-            self.save()
 
     def assign_to_task(self, task):
         print("Assigning {0} to task {1}".format(self, task))

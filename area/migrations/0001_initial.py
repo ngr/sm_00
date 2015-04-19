@@ -3,91 +3,77 @@ from __future__ import unicode_literals
 
 from django.db import models, migrations
 import django.core.validators
+from django.conf import settings
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='BuildingMaterialRecipe',
-            fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
-                ('_amount', models.PositiveIntegerField(default=1)),
-            ],
-            options={
-            },
-            bases=(models.Model,),
-        ),
-        migrations.CreateModel(
-            name='BuildingType',
-            fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
-                ('_name', models.CharField(max_length=127)),
-            ],
-            options={
-            },
-            bases=(models.Model,),
-        ),
-        migrations.CreateModel(
             name='Location',
             fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
-                ('_name', models.CharField(max_length=127, blank=True)),
-                ('_area', models.PositiveIntegerField(default=1, validators=[django.core.validators.MinValueValidator(1)])),
-                ('_area_used', models.PositiveIntegerField(default=0)),
+                ('id', models.AutoField(serialize=False, primary_key=True, verbose_name='ID', auto_created=True)),
+                ('name', models.CharField(blank=True, max_length=127)),
+                ('area', models.PositiveIntegerField(validators=[django.core.validators.MinValueValidator(1)], default=1)),
+                ('area_used', models.PositiveIntegerField(default=0)),
             ],
             options={
             },
             bases=(models.Model,),
         ),
         migrations.CreateModel(
-            name='HousingDistrict',
+            name='LocationDirectory',
             fields=[
-                ('location_ptr', models.OneToOneField(auto_created=True, parent_link=True, serialize=False, to='area.Location', primary_key=True)),
+                ('id', models.AutoField(serialize=False, primary_key=True, verbose_name='ID', auto_created=True)),
+                ('name', models.CharField(max_length=127)),
+                ('area', models.PositiveIntegerField(default=1)),
             ],
             options={
             },
-            bases=('area.location',),
+            bases=(models.Model,),
         ),
         migrations.CreateModel(
-            name='FarmingField',
+            name='LocationType',
             fields=[
-                ('location_ptr', models.OneToOneField(auto_created=True, parent_link=True, serialize=False, to='area.Location', primary_key=True)),
+                ('id', models.AutoField(serialize=False, primary_key=True, verbose_name='ID', auto_created=True)),
+                ('name', models.CharField(max_length=127)),
             ],
             options={
             },
-            bases=('area.location',),
+            bases=(models.Model,),
         ),
         migrations.CreateModel(
             name='Region',
             fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
-                ('_name', models.CharField(max_length=127)),
-                ('_area', models.BigIntegerField(default=1, validators=[django.core.validators.MinValueValidator(1)])),
+                ('id', models.AutoField(serialize=False, primary_key=True, verbose_name='ID', auto_created=True)),
+                ('name', models.CharField(max_length=127)),
+                ('area', models.BigIntegerField(validators=[django.core.validators.MinValueValidator(1)], default=1)),
+                ('owner', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
             ],
             options={
             },
             bases=(models.Model,),
         ),
-        migrations.CreateModel(
-            name='Warehouse',
-            fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
-            ],
-            options={
-            },
-            bases=(models.Model,),
+        migrations.AddField(
+            model_name='locationdirectory',
+            name='type',
+            field=models.ForeignKey(to='area.LocationType'),
+            preserve_default=True,
         ),
-        migrations.CreateModel(
-            name='Workshop',
-            fields=[
-                ('location_ptr', models.OneToOneField(auto_created=True, parent_link=True, serialize=False, to='area.Location', primary_key=True)),
-            ],
-            options={
-            },
-            bases=('area.location',),
+        migrations.AddField(
+            model_name='location',
+            name='design',
+            field=models.ForeignKey(to='area.LocationDirectory'),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='location',
+            name='region',
+            field=models.ForeignKey(to='area.Region'),
+            preserve_default=True,
         ),
     ]

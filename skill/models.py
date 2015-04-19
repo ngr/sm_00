@@ -23,7 +23,7 @@ class Skill(models.Model):
     name = models.CharField(max_length=127)
     primary_attribute =  models.PositiveSmallIntegerField(choices=ATTRIBUTE_CHOICES)
     difficulty = models.PositiveSmallIntegerField(default=1)
-    required_skills = models.ManyToManyField("self", symmetrical=False, null=True)
+    required_skills = models.ManyToManyField("self", symmetrical=False, blank=True, null=True)
    
     def __str__(self):
         return self.name

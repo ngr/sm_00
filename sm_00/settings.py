@@ -57,7 +57,7 @@ INSTALLED_APPS = (
     'area',
     'item',
     'sm_00',
-    'talk',
+#    'talk',
     'rest_framework',
     'oauth2_provider',
     'corsheaders',

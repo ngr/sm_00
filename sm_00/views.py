@@ -45,8 +45,8 @@ def SlaveMasterLogin(request):
         # Generate Token
               # I tried to use several libs to control tokens. They sucked.
               # So here is a MANUAL temporary token retrieve method.
-                application_id = "hkREDi801GL9cwp7SyMeUQmFnpHlQyyO1PkOF0QW"
-                application_secret = "9jo9OxzpFKHBKun8prOgIIXvigcpUFhY9ZRoivEYZoQC5jVIzPLIZheeoVGE8D6xcm86LMlxcNJEOP2YIGBtIBW7UlCFVwOPhvZp75D4VQormzrBImjBKHkSUiRDqTXN"
+                application_id = "4ci299zGdWnwTWmYlwvk13vsAro60jkoVe9bztz6"
+                application_secret = "nf7WsWxuB0YW1MqjcryHIwRnegU6KnYCaGGnYyehEs6wb3MVXcndPrBjT0xPRBVAD0XNzwX5RX3LBZ7X76BKan90jAbpFQdgpsaP3zLFNFcBJbxWcy1bO9JnQRecgOHW"
                 token_url = 'http://aws00.grischenko.ru:8000/o/token/'   
               
               # This is authorization for new token generation.
@@ -62,7 +62,7 @@ def SlaveMasterLogin(request):
                 }
                 r = requests.post(token_url, headers=headers, data=payload)
                 response_json = r.json()
-              # print(response_json)
+                #print(response_json)
               # Save tokens to session
                 request.session['access_token'] = response_json['access_token']
                 request.session['refresh_token'] = response_json['refresh_token']
@@ -91,7 +91,10 @@ class APIEndpoint(APIView):
 def api_root(request, format=None):
     return Response({
         'task': reverse('api:task-list', request=request, format=format),
-        'assignment': reverse('api:assignment-list', request=request, format=format)
+        'assignment': reverse('api:assignment-list', request=request, format=format),
+        'regions': reverse('api:region-list', request=request, format=format),
+        'locations': reverse('api:location-list', request=request, format=format),
+        'locationdirectories': reverse('api:locationdirectory-list', request=request, format=format),
     })
 
 

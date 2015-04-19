@@ -13,8 +13,8 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Item',
             fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
-                ('_name', models.CharField(max_length=127, blank=True)),
+                ('id', models.AutoField(serialize=False, primary_key=True, verbose_name='ID', auto_created=True)),
+                ('_name', models.CharField(blank=True, max_length=127)),
                 ('_amount', models.PositiveIntegerField(default=1)),
                 ('_date_init', models.DateTimeField()),
             ],
@@ -25,8 +25,8 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ItemDirectory',
             fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
-                ('_name', models.CharField(max_length=127, default='')),
+                ('id', models.AutoField(serialize=False, primary_key=True, verbose_name='ID', auto_created=True)),
+                ('_name', models.CharField(default='', max_length=127)),
             ],
             options={
             },
@@ -35,7 +35,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='FoodDirectory',
             fields=[
-                ('itemdirectory_ptr', models.OneToOneField(auto_created=True, parent_link=True, serialize=False, to='item.ItemDirectory', primary_key=True)),
+                ('itemdirectory_ptr', models.OneToOneField(parent_link=True, serialize=False, to='item.ItemDirectory', auto_created=True, primary_key=True)),
                 ('_taste', models.PositiveSmallIntegerField(default=1)),
                 ('_satiety', models.PositiveSmallIntegerField(default=1)),
                 ('_shelf_life', models.PositiveSmallIntegerField(default=1)),
@@ -47,9 +47,9 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ItemJoffreyList',
             fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
+                ('id', models.AutoField(serialize=False, primary_key=True, verbose_name='ID', auto_created=True)),
                 ('execution_time', models.DateTimeField()),
-                ('reason', models.CharField(max_length=255, blank=True)),
+                ('reason', models.CharField(blank=True, max_length=255)),
             ],
             options={
             },
@@ -58,7 +58,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ItemRecipe',
             fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
+                ('id', models.AutoField(serialize=False, primary_key=True, verbose_name='ID', auto_created=True)),
                 ('_amount', models.PositiveIntegerField(default=1)),
             ],
             options={
@@ -68,7 +68,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='MaterialDirectory',
             fields=[
-                ('itemdirectory_ptr', models.OneToOneField(auto_created=True, parent_link=True, serialize=False, to='item.ItemDirectory', primary_key=True)),
+                ('itemdirectory_ptr', models.OneToOneField(parent_link=True, serialize=False, to='item.ItemDirectory', auto_created=True, primary_key=True)),
                 ('_density', models.PositiveSmallIntegerField(default=1)),
             ],
             options={
