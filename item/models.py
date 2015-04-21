@@ -1,11 +1,11 @@
 # ITEM application models #
-from django.db import models
-from django.db.models import Q
-from django.utils import timezone
-from django.core.validators import MaxValueValidator, MinValueValidator
+#from django.db.models import Q
+#from django.core.validators import MaxValueValidator, MinValueValidator
+#import operator, functools
 
-import operator
-import functools
+import sys
+from django.db import models
+from django.utils import timezone
 
 from slave.settings import *
 from slave.helpers import *
@@ -25,7 +25,6 @@ class ItemBaseParam(models.Model):
     item  = models.ForeignKey('item.ItemDirectory', related_name='params', null=False, blank=False)
     name  = models.ForeignKey('item.ItemParamDirectory', null=False, blank=False)
     value = models.CharField(max_length=255)
-    # I decided to try only built-in methods for this directory.
     
     def __str__(self):
         return '{0} - {1}'.format(self.item, self.name)
@@ -35,28 +34,44 @@ class ItemBaseParam(models.Model):
 
 class ItemParamDirectory(models.Model):
     """ Directory of available Item parameters. """
-    name = models.CharField(max_length=127, blank=False)
+    name = models.CharField(max_length=127, blank=False, unique=True)
     def __str__(self):
         return self.name
         
 class ItemDirectory(models.Model):
     """ This is the main list of all types of files. """
-    name    = models.CharField(max_length=127, default='')
+    name    = models.CharField(max_length=127, default='', unique=True)
 
     def __str__(self):
         return self.name
 
     def get_param(self, param=None):
         """ Return the requested 'param'. """
-        print("Looking for {1} param {0} in ItemDirectory.".format(self, param))
-        if not isinstance(param, str):
-            return self.params
-        print(self.params)
-        return self.params.get(item=self, name=param).value
+#        print("Looking for {1} param in ItemDirectory {0}.".format(self, param))
+        if isinstance(param, str):
+            # Validate that the requested string is OK
+            param_q = ItemParamDirectory.objects.filter(name=param)
+            if param_q.count() > 0:
+                param_key = param_q.all()[0]
+            # If some wrong parameter name return a full params list.
+            else:
+                return self.params.all()
+        # In case received an ItemParamDirectory object just use it
+        elif isinstance(param, ItemParamDirectory):
+            param_key = param
+        # If some wrong parameter type or None return a full params list.
+        else:
+            return self.params.all()
+        # Check if param exists for this ItemDirectory object.
+        q = self.params.filter(item=self, name=param_key)
+        if q.count() > 0:
+            return q.all()[0].value 
+        else:
+            return None
 
 class ItemRecipe(models.Model):
     """ Recipes of materials required to craft items. """
-    task_type   = models.ForeignKey('task.CraftingTaskDirectory')
+    task_type   = models.ForeignKey('task.CraftingTaskDirectory', unique=True)
     ingredient  = models.ForeignKey(ItemDirectory, related_name='ingredient')
     amount     = models.PositiveIntegerField(default=1)
     
@@ -64,8 +79,41 @@ class ItemRecipe(models.Model):
         return "{0} ingredient - {1}".format(self.task_type, self.ingredient)
     
 class ItemManager(models.Manager):
-    pass
-    
+    def put(self, itype, location, amount=1):
+        """ Put amount of items to location. """
+        # Check if a record for this type already exists in this location    
+        piles = self.filter(location=location, itype=itype).all()
+        if piles.count() > 0:
+            # Put to this pile
+            piles.last().put(amount=amount)
+        else:
+        # Create a new record (pile)
+            pile = Item(itype=itype, location=location, amount=amount)
+            pile.save()
+
+    def take(self, itype, location, amount=sys.maxsize):
+        """ Take amount of itype items from location. """
+        piles = self.filter(location=location, itype=itype).all()
+        # In case we do not have any items of this itype return None.
+        if piles.count() == 0:
+            return None
+        else:
+            result = 0
+            # Take from piles until we collect requested amount
+            for pile in piles.all():
+                result += pile.take(amount=amount-result)
+                # If we have taken required amount of items return.
+                if result == amount:
+                    return result
+            return result
+
+    def move(self, itype, location, new_location, amount=sys.maxsize):
+        """ Move amount of itype items to from location to new_location. """
+        # Take the required amount or as much as exists.
+        result = self.take(itype=itype, location=location, amount=amount)
+        # Put the amount taken to new location
+        self.put(itype=itype, location=new_location, amount=result)
+
 class Item(models.Model):
     itype   = models.ForeignKey(ItemDirectory)
     amount  = models.PositiveIntegerField(default=1)
@@ -75,7 +123,7 @@ class Item(models.Model):
     objects = ItemManager()
 
     def __str__(self):
-        return self.name
+        return "{0} at {1}: {2}".format(self.itype, self.location, self.amount)
 
     def get_type(self):
         """ Return ItemDirectory of the Item. """
@@ -93,29 +141,35 @@ class Item(models.Model):
 
     def is_free(self):
         """ Free Items are stored in HQ only. """
-        print(self.get_location().get_type())
-        return self.get_location().get_type() == 'HQ'
+        return str(self.get_location().get_type()) == 'HQ'
+    
+    def is_food(self):
+        """ Is item appropriate to eat. """
+        # Food items have param 'food'.
+        return str(self.get_type().get_param(param='food')) == '1'
+    
+    def is_material(self):
+        """ Is item appropriate to construct from. """
+        # Material items have param 'material'.
+        return str(self.get_type().get_param(param='material')) == '1'
+        
+    def get_param(self, param=None):
+        """ Return the requested Item parameter."""
+        # FIXME! This looks too complex. Think about other way.
 
-    def get_param(self, param):
-        """ Return the requested ItemDirectory parameter."""
-        if not isinstance(param, str):
-            raise TypeError("Attributes should be strings")
-        print("Looking for {1} param of instance {0}".format(self, param))
-
-     # Get base parameter for this ItemType
-        try: 
-            item_param_value = self.get_type().get_param(param=param)
-        except AttributeError:
-            item_param_value = None
-#        print("Base:", item_param_value)
-    # Check for any Item-specific parameters
-        try: 
-            item_param_value += self.params.get(item=self, name=param).value
-        except AttributeError:
-            pass # We have already initialized item_param_value to None
-       
-        return item_param_value
-
+      # If param not specified - get all.
+        if not param:
+            result  = self.params.all()
+        else:
+            if isinstance(param, str):
+                param_key = ItemParamDirectory.objects.get(name=param)
+            elif isinstance(param, int):
+                param_key = ItemParamDirectory.objects.get(pk=param)
+            else:
+                raise AttributeError("Param must be string or directory ID.")
+            # We know that there is only one record.
+            result = self.params.get(item=self, name=param_key)
+        return result
         
 #########################################
     def put(self, amount=1):
@@ -140,7 +194,7 @@ class Item(models.Model):
             raise AttributeError("Amount should be positive")
 
         if self.amount > amount:
-            print("Taking % of %" % (amount, str(self.itype)))
+            print("Taking {0} of {1}" .format (amount, str(self.itype)))
             self.amount -= amount
             self.save()
             return amount

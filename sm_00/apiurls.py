@@ -3,6 +3,7 @@ from django.contrib import admin
 from sm_00 import views
 from task import views as task_views
 from area import views as area_views
+from item import api_views as item_views
 
 urlpatterns = patterns('',
     # Examples:
@@ -10,6 +11,9 @@ urlpatterns = patterns('',
     # url(r'^blog/', include('blog.urls')),
 
     url(r'^$', views.api_root),
+
+    url(r'^items/$', item_views.API_ItemList.as_view(), name='item-list'),            
+
     url(r'^task/$', task_views.API_TaskList.as_view(), name='task-list'),            
     url(r'^task/(?P<pk>[0-9]+)/$', task_views.API_TaskDetail.as_view(), name='task-detail'),
     

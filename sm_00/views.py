@@ -90,7 +90,7 @@ class APIEndpoint(APIView):
 @api_view(('GET',))
 def api_root(request, format=None):
     return Response({
-        'task': reverse('api:task-list', request=request, format=format),
+        'items': reverse('api:item-list', request=request, format=format),        'task': reverse('api:task-list', request=request, format=format),
         'assignment': reverse('api:assignment-list', request=request, format=format),
         'regions': reverse('api:region-list', request=request, format=format),
         'locations': reverse('api:location-list', request=request, format=format),
