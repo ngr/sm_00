@@ -10,16 +10,6 @@ from django.utils import timezone
 from slave.settings import *
 from slave.helpers import *
 
-class ItemParam(models.Model):
-    """ ManyToMany parameters of Item objects. """
-    item  = models.ForeignKey('item.Item', related_name='params', null=False, blank=False)
-    name  = models.ForeignKey('item.ItemParamDirectory', null=False, blank=False)
-    value = models.CharField(max_length=255)
-    # I decided to try only built-in methods for this directory.
-    
-    class Meta:
-        unique_together = (('item', 'name'))
-
 class ItemBaseParam(models.Model):
     """ ManyToMany parameters of ItemDirectory objects. """
     item  = models.ForeignKey('item.ItemDirectory', related_name='params', null=False, blank=False)
@@ -113,11 +103,13 @@ class ItemManager(models.Manager):
         result = self.take(itype=itype, location=location, amount=amount)
         # Put the amount taken to new location
         self.put(itype=itype, location=new_location, amount=result)
+        
+        # FIXME Connect item specific params!
 
 class Item(models.Model):
     itype   = models.ForeignKey(ItemDirectory)
     amount  = models.PositiveIntegerField(default=1)
-    date_init = models.DateTimeField()
+    date_init = models.DateTimeField(default=timezone.now())
     location = models.ForeignKey('area.Location', related_name='items')
 
     objects = ItemManager()
@@ -155,22 +147,9 @@ class Item(models.Model):
         
     def get_param(self, param=None):
         """ Return the requested Item parameter."""
-        # FIXME! This looks too complex. Think about other way.
+        # No specific item parameters only in directory.
+        return self.get_type().get_param(param=None)
 
-      # If param not specified - get all.
-        if not param:
-            result  = self.params.all()
-        else:
-            if isinstance(param, str):
-                param_key = ItemParamDirectory.objects.get(name=param)
-            elif isinstance(param, int):
-                param_key = ItemParamDirectory.objects.get(pk=param)
-            else:
-                raise AttributeError("Param must be string or directory ID.")
-            # We know that there is only one record.
-            result = self.params.get(item=self, name=param_key)
-        return result
-        
 #########################################
     def put(self, amount=1):
         """ Increase amount of Item by amount. We assume that all rules are already checked. """
