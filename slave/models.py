@@ -6,7 +6,7 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.core.files.storage import FileSystemStorage
-#from django.contrib.auth.models import User
+from django.contrib.auth.models import User
 from slave.settings import *
 from slave.helpers import *
 
@@ -67,7 +67,17 @@ class SlaveManager(models.Manager):
     # Now setting rest of hard set in kwargs
         for param, value in kwargs.items():
             if param not in VALID_ATTRIBS: 
+                print("BAD PARAM", param)
                 continue
+            # Get Owner if specified int
+            if param == 'owner' and isinstance(value, int):
+                value = User.objects.get(pk=value)
+            # Get Location if specified int
+            if param == 'location' and isinstance(value, int):
+                value = Location.objects.get(pk=value)
+
+            # Finally try to set attribute. As this is service
+            # function we do not manage exceptions for now.
             setattr(larva, param, value)
 #            print("Hard defined param:", param, "=", value)
 
@@ -148,7 +158,7 @@ class Slave(models.Model):
     _satiety = models.PositiveSmallIntegerField(default=0,\
             validators=[MinValueValidator(0), MaxValueValidator(100)])
 
-    location = models.ForeignKey(Location, null=False)
+    location = models.ForeignKey('area.Location', null=True, blank=True)
     owner   = models.ForeignKey('auth.User', related_name='slaves', default=1)
 
     objects = SlaveManager()

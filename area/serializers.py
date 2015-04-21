@@ -1,6 +1,7 @@
 # AREA API Serializer #
 from django.utils import timezone
 from rest_framework import serializers
+from rest_framework import pagination
 from area.models import Region, Location, LocationDirectory, LocationType
 
 class RegionSerializer(serializers.ModelSerializer):

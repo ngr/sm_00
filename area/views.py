@@ -76,7 +76,7 @@ class API_RegionDetail(APIView):
     serializer_class = RegionDetailSerializer 
         
     def get_object(self, pk):
-        """ Get already authorized Location."""
+        """ Get already authorized Region."""
         region_object = Region.objects.get(pk=pk, owner=self.request.user)
         return region_object
 
@@ -87,7 +87,26 @@ class API_RegionDetail(APIView):
             return Response("Authorization error or wrong Region id.",
                 status=status.HTTP_403_FORBIDDEN)
         
-        return Response(self.serializer_class(region).data)        
+        return Response(self.serializer_class(region).data)
+    
+    def put(self, request, pk):
+        """ We allow to modify only the name of the Region,
+            or call built-in methods. """
+    #   Get authorized Region to deal with.
+        # Although user can try to specify a different 'pk' in his JSON,
+        # everything should be OK and only the one from URL will be used.
+        # Maybe check this possible security issue one day.
+        try:
+            region = self.get_object(pk)
+        except Region.DoesNotExist:
+            return Response("Authorization error or wrong Region id.",
+                status=status.HTTP_403_FORBIDDEN)
+
+        print(self.request.data)
+        # We do not have any built-in methods now, so this is just a stub.
+        return Response(self.serializer_class(region).data)
+        
+    
         
 class API_LocationDetail(APIView):
     """ Details of Location object. """

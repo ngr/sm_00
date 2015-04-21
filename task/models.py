@@ -121,7 +121,7 @@ class TaskManager(models.Manager):
         
 class TaskDirectory(models.Model):
     name   = models.CharField(max_length=127)
-    location_type = models.ForeignKey('area.LocationDirectory')
+    location_type = models.ForeignKey('area.LocationType')
     area_per_worker = models.PositiveIntegerField(default=1)
 
     _min_slaves = models.PositiveIntegerField(default=1)
@@ -231,58 +231,6 @@ class FarmingTaskDirectory(TaskDirectory):
     def get_exec_time(self):
         return self._exec_time
     
-#############
-# We put yield methods to this class as far as they are specific to task types
-# This might be a bad idea, but it is specified.
-# The method receives a parent TASK object
-"""    def get_yield(self, task, strict=False):
-        " "" There can be several primary and secondary skills.
-        The functions calculates the part of each one and the total output.
-        Primary skill = 50%, Secondary split by number. This results in base_yield.
-        Bonuses may add extra. "" "
-
-        print("Trying to yield from farming task")
-        ps = self.get_primary_skill()
-        ss = self.get_secondary_skill()
-        print("ps, ss =", ps, ss)
-
-        print("Now task specific stuff")
-        for a in task.assignment_set.all():
-            if a.is_running:
-                a.release()
-
-        slave_skills = a.slave.get_trained_skills()
-#        sec_sl_skills = (self.slave.get_skills(*ss))
-        print("Slave possesses:", slave_skills)
-
-        print("Comparing:", ps, list(slave_skills.keys()))
-
-        if ps not in list(slave_skills.keys()) or slave_skills[ps] == 0:
-            print("The slave doesn't posess primary skill. Looking for secondaries")
-            slave_skills[ps] = 0 # Should be set by Slave obj, but this is for safety
-            if not any(s in list(slave_skills.keys()) and slave_skills[s] > 0 for s in ss):
-
-                 print("The slave doesn't posess required skills. There is no yield!")
-                 return 0
-
-        result = 0
-        by = self.get_base_yield()
-        print("Base yield:", by)
-        result += (by * (slave_skills[ps] / 100.0) * PRIMARY_SKILL_FARMING_VALUE)
-        print("Primary skill harvested:", result)
-
-        ss_part = SECONDARY_SKILLS_FARMING_VALUE / ss.count()
-
-        for s in ss:
-            result += (by * (slave_skills[s] / 100.0) * ss_part)
-            print("Secondary skill {0} added some yield with result: {1}".format(s, result))
-
-        if not strict:
-            result += (result * (randrange(-YIELD_RANDOMIZER, YIELD_RANDOMIZER) / 100.0))
-
-
-        return (self.get_yield_type(), result) """
-
 class CraftingTaskDirectory(TaskDirectory):
     """ General subtype of crafting task types. """
 
@@ -303,22 +251,15 @@ class CraftingTaskDirectory(TaskDirectory):
 
     def get_work_units(self):
         return self._work_units    
-
-class BuildingMaterialRecipe(models.Model):
-    """ Recipes of materials required to construct buildings. """
-
-    task_type   = models.ForeignKey('task.BuildingTaskDirectory')
-    material    = models.ForeignKey('item.MaterialDirectory')
-    _amount     = models.PositiveIntegerField(default=1)
-
-        
+      
 class BuildingTaskDirectory(TaskDirectory):
     """ General subtype of building task types. """
 
     _work_units  = models.PositiveIntegerField(default=1)
-    
     building  = models.ForeignKey('area.LocationDirectory')
-    material  = models.ManyToManyField('item.MaterialDirectory', through='task.BuildingMaterialRecipe', through_fields=('task_type', 'material'))
+#    material  = models.ManyToManyField('item.MaterialDirectory',\
+#        through='area.BuildingMaterialRecipe',\
+#        through_fields=('task_type', 'material'))
 
     """ Basic get() methods for CraftingTaskDirectory properties. """
     def __str__(self):
@@ -333,8 +274,8 @@ class BuildingTaskDirectory(TaskDirectory):
     def get_yield_building(self):
         return self.building
     
-    def get_material(self):
-        return self.material
+    def get_materials(self):
+        return self.materials
 
  
 class Task(models.Model):

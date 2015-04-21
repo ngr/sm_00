@@ -6,18 +6,17 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 #from operator import itemgetter, attrgetter, methodcaller
 import datetime
 
-from item.models import Item
+#from item.models import Item
 
 from slave.helpers import *
 from slave.settings import *
 from slave.logic import AreaError
 
-
-class RegionManager(models.Manager):
-    """ The main interface to operate Regions and locations """
+"""class RegionManager(models.Manager):
+    "" The main interface to operate Regions and locations ""
 
     def auth_get_region(self, owner, region=None):
-        """ Return region or all regions of 'owner' """
+        "" Return region or all regions of 'owner' ""
         args = ()
         kwargs = {}
 
@@ -27,7 +26,7 @@ class RegionManager(models.Manager):
 # This should be the last param
         kwargs['owner'] = owner
         return self.filter(*args, **kwargs)
-
+"""
 class Region(models.Model):
     """ Region is the macro element of area distribution. """
     name = models.CharField(max_length=127)
@@ -35,7 +34,7 @@ class Region(models.Model):
     
     owner = models.ForeignKey('auth.User')
 
-    objects = RegionManager()
+#    objects = RegionManager()
 
     def __str__(self):
         """ Return name of Region. """
@@ -69,7 +68,7 @@ class Region(models.Model):
         
     ###############
     # SET methods #
-    
+    # FIXME Use this for debugging only now!
     def set_name(self, name=''):
         """ Set a new name of Region. """
         self.name = name
@@ -77,8 +76,6 @@ class Region(models.Model):
     def set_owner(self, owner):
         """ Change owner of Region. """
         self.owner = owner
-
-#########        
 
 class LocationType(models.Model):
     """ This is General type of Locations. """
@@ -91,7 +88,7 @@ class LocationType(models.Model):
         return self.name
 
 class LocationDirectory(models.Model):
-    """ This is "Location" Template. """
+    """ This is Location design directory. """
     name        = models.CharField(max_length=127)
     area        = models.PositiveIntegerField(default=1)
     type        = models.ForeignKey('area.LocationType')
@@ -110,6 +107,12 @@ class LocationDirectory(models.Model):
     def get_area(self):
         """ Default Area of this LocationDirectory. """
         return self.area
+
+class BuildingMaterialRecipe(models.Model):
+    """ Recipes of materials required to construct Locations. """
+    task_type   = models.ForeignKey('task.BuildingTaskDirectory', related_name='materials')
+    material    = models.ForeignKey('item.ItemDirectory')
+    _amount     = models.PositiveIntegerField(default=1)
         
 class Location(models.Model):
     name   = models.CharField(max_length=127, blank=True)
