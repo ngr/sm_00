@@ -78,7 +78,7 @@ class ItemManager(models.Manager):
             piles.last().put(amount=amount)
         else:
         # Create a new record (pile)
-            pile = Item(itype=itype, location=location, amount=amount)
+            pile = Item(itype=itype, location=location, amount=amount, date_init=timezone.now())
             pile.save()
 
     def take(self, itype, location, amount=sys.maxsize):
@@ -109,7 +109,7 @@ class ItemManager(models.Manager):
 class Item(models.Model):
     itype   = models.ForeignKey(ItemDirectory)
     amount  = models.PositiveIntegerField(default=1)
-    date_init = models.DateTimeField(default=timezone.now())
+    date_init = models.DateTimeField(blank=True, null=True)
     location = models.ForeignKey('area.Location', related_name='items')
 
     objects = ItemManager()

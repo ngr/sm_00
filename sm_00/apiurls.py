@@ -13,6 +13,7 @@ urlpatterns = patterns('',
     url(r'^$', views.api_root),
 
     url(r'^items/$', item_views.API_ItemList.as_view(), name='item-list'),            
+    url(r'^item/(?P<pk>[0-9]+)/$', item_views.API_ItemDetail.as_view(), name='item-detail'),
 
     url(r'^task/$', task_views.API_TaskList.as_view(), name='task-list'),            
     url(r'^task/(?P<pk>[0-9]+)/$', task_views.API_TaskDetail.as_view(), name='task-detail'),

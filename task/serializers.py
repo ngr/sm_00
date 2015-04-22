@@ -97,8 +97,7 @@ class TaskSerializer(serializers.ModelSerializer):
         # Simply reset it to zero according to Game logic.
         # Though this might not be RESTful. 
         if not self.instance:
-            return 0.0
-            
+            return 0.0           
             
     def validate_location(self, location):
         """ Location must be of correct type and have minimum free space. """

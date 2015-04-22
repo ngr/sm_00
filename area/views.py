@@ -85,7 +85,7 @@ class API_RegionDetail(APIView):
             region = self.get_object(pk)
         except Region.DoesNotExist:
             return Response("Authorization error or wrong Region id.",
-                status=status.HTTP_403_FORBIDDEN)
+                status=status.HTTP_404_NOT_FOUND)
         
         return Response(self.serializer_class(region).data)
     
@@ -124,7 +124,7 @@ class API_LocationDetail(APIView):
             location = self.get_object(pk)
         except Location.DoesNotExist:
             return Response("Authorization error or wrong Location id.",
-                status=status.HTTP_403_FORBIDDEN)
+                status=status.HTTP_404_NOT_FOUND)
         
         return Response(self.serializer_class(location).data)        
 

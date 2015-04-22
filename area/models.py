@@ -151,3 +151,7 @@ class Location(models.Model):
         """ Returns amount of unused area in Location to determine if Task can be created here. """
         # FIXME!
         return self.get_area()
+
+    def get_items(self):
+        """ List of Items in Location. """
+        return self.items
