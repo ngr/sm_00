@@ -147,10 +147,19 @@ class Location(models.Model):
         """ Return the owner of the parent Region. """
         return self.get_region().get_owner()
 
+    def get_tasks(self):
+        """ List of current tasks in Location. """
+        return self.tasks.all()
+        
     def get_free_area(self):
         """ Returns amount of unused area in Location to determine if Task can be created here. """
         # FIXME!
-        return self.get_area()
+        # Get all Tasks in Location
+        tasks = self.get_tasks()
+        # Get area used by each task
+        area_used_by_tasks = [t.get_assignments(running=True).count() \
+                * t.get_type().get_area_per_worker() for t in tasks]
+        return self.get_area() - sum(area_used_by_tasks)
 
     def get_items(self):
         """ List of Items in Location. """

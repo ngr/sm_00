@@ -43,10 +43,14 @@ class LocationSerializer(serializers.ModelSerializer):
 ### DETAILED SERIALIZERS ###
 class RegionDetailSerializer(serializers.ModelSerializer):
     locations = LocationSerializer(many=True, read_only=True)
+    free_area = serializers.SerializerMethodField(read_only=True)
+    def get_free_area(self, object):
+        """ Calculated free area in Region. """
+        return int(object.get_free_area())
     
     class Meta:
         model = Region
-        fields = ('id', 'name', 'area', 'get_free_area', 'locations', 'owner')
+        fields = ('id', 'name', 'area', 'free_area', 'locations', 'owner')
 
 class LocationDetailSerializer(serializers.ModelSerializer):
     free_area = serializers.SerializerMethodField(read_only=True)

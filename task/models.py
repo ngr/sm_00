@@ -287,7 +287,7 @@ class Task(models.Model):
     _fulfilled  = models.FloatField(default=0.0)
 
     type        = models.ForeignKey(TaskDirectory)
-    location    = models.ForeignKey('area.Location')
+    location    = models.ForeignKey('area.Location', related_name='tasks')
     owner       = models.ForeignKey('auth.User', related_name='tasks')
 
     objects     = TaskManager()
@@ -466,8 +466,8 @@ class Task(models.Model):
         """ Check the location type vs required one for this type of task """
         if not self.get_location().get_type() == self.get_type().get_location_type():
 #                [i[1] for i in LOCATION_TYPES if i[0] == self.get_type().get_location_type()][0]:
-#            print(self.get_location().get_type())
-#            print(self.get_type().get_location_type())
+            #print(self.get_location().get_type())
+            #print(self.get_type().get_location_type())
 #            print([i[1] for i in LOCATION_TYPES if i[0] == self.get_type().get_location_type()])
             raise AssignmentError("Wrong type of location")
 
