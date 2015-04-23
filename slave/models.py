@@ -318,8 +318,8 @@ class Slave(models.Model):
 
     def get_assignments(self, active=True):
         """ List assignments of Slave. If _active_ is False then show full list of assignment history. """
-        return Assignment.objects.get_slave_assignments(slave=self, active=True) if active\
-                else Assignment.objects.get_slave_assignments(slave=self, active=False)
+        return self.assignments.filter(date_released__isnull=True).all() if active\
+            else self.assignments.all()
 
     def is_free(self):
         """ Returns True if Slave is not assigned to any task now. """

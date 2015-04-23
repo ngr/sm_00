@@ -15,45 +15,15 @@ from slave.settings import *
 
 class AssignmentManager(models.Manager):
 
-    def get_slave_assignments(self, slave, active=True):
-        """ Return a list of assignments for Slave """
-        return Assignment.objects.filter(slave=slave, date_released__isnull=True) if active\
-                else Assignment.objects.filter(slave=slave)
-    
-    def check_slave_idle(self, slave, totally=True):
-        """ Check if Slave has no job. Totally means not even self-assigned job. """
-        return True if self.get_slave_assignments(slave).count() == 0 else False
-
-    def check_slave_trained(self, slave, task):
-        """ Check if Slave possesses required skills for this task """
-        
-        ps = task.get_primary_skill()
-        ss = task.get_secondary_skill()
-
-        slave_skills = slave.get_trained_skills()
-
-        if ps in list(slave_skills.keys()) and slave_skills[ps] > 0:
-            print("The slave posesses primary skill.")
-            return True
-        elif any(s in list(slave_skills.keys()) and slave_skills[s] > 0 for s in ss):
-                print("The slave posesses some secondary skill.")
-                return True
-        else:
-            return False
-
-    def check_slave_location(self, slave, task):
-        """ Check if Slave is in the same Region for Task """
-        return slave.get_location().get_region() == task.get_location().get_region()
-
     def assign(self, task, slave):
         """ Perform the necessary checks and make Assignment """
-        if not self.check_slave_location(slave, task):
+        if not slave.get_location().get_region() == task.get_location().get_region():
             raise AssignmentError("Slave in wrong region")
 
-        if not self.check_slave_idle(slave, totally=True):
+        if not slave.is_free():
             raise AssignmentError("Slave is busy")
 
-        if not self.check_slave_trained(slave, task):
+        if not self.task.applicable_for_slave(slave):
             raise AssignmentError("Slave is not trained for this")
         
     # If Task is not yet saved - do it now.
@@ -281,6 +251,7 @@ class BuildingTaskDirectory(TaskDirectory):
 class Task(models.Model):
     _date_start  = models.DateTimeField()
     _date_finish = models.DateTimeField()
+    date_updated = models.DateTimeField()
 
     _retrieved  = models.BooleanField(default=False)
     _yield      = models.FloatField(default=0.0)
@@ -309,8 +280,6 @@ class Task(models.Model):
         """ Get type directory (group of types). """
         return self.type.get_type_readable()
 
-        
-
     def get_location(self):
         return self.location
 
@@ -330,7 +299,6 @@ class Task(models.Model):
     def is_finished(self):
         return self.get_date_finish() <= timezone.now()
 
-
     def get_primary_skill(self):
         return self.type.get_primary_skill()
 
@@ -342,6 +310,9 @@ class Task(models.Model):
 
     def get_date_finish(self):
         return self._date_finish
+
+    def get_date_updated(self):
+        return self.date_updated
 
     def get_assignments(self, running=False):
         return self.assignments.all() if not running else\
@@ -357,6 +328,23 @@ class Task(models.Model):
         available_area = self.get_location().get_free_area()
         print("Location needs {0} area and currently has {1}.".format(required_area, available_area))
         return available_area > required_area
+
+    def applicable_for_slave(self, slave):
+        """ Check if Slave possesses required skills for this Task """
+        
+        ps = self.get_primary_skill()
+        ss = self.get_secondary_skill()
+
+        slave_skills = slave.get_trained_skills()
+
+        if ps in list(slave_skills.keys()) and slave_skills[ps] > 0:
+            print("The slave posesses primary skill.")
+            return True
+        elif any(s in list(slave_skills.keys()) and slave_skills[s] > 0 for s in ss):
+                print("The slave posesses some secondary skill.")
+                return True
+        else:
+            return False
 
     def get_farming_yield_item(self):
         return self.get_type().get_param('plant').get_yield_item()
@@ -402,6 +390,7 @@ class Task(models.Model):
             self._date_start = timezone.now()
         print("Setting _date_finish to: {0}".format(self.calculate_date_finish()))
         self._date_finish = self.calculate_date_finish()
+        self.date_updated = timezone.now()
         super(Task, self).save(*args, **kwargs)
 
     def calculate_date_finish(self):
@@ -494,6 +483,7 @@ class Task(models.Model):
 
         print("Previous Slaves: {0}".format(previous_slaves))
 
+##########
         print("Retrieving yield")
         print(self.type.get_type())
         

@@ -1,15 +1,26 @@
+from datetime import timedelta
 from django.forms import widgets
 from django.utils import timezone
+from django.core.urlresolvers import reverse
 from rest_framework import serializers
 from task.models import Task, TaskDirectory, Assignment
 from slave.models import Slave
- 
+from area.models import Location
+from slave.settings import *
+
 class AssignmentSerializer(serializers.ModelSerializer):
-    
+    url     = serializers.SerializerMethodField(read_only=True)
+    # FIXME Add filter by owner and same for Slave selector.
+    task    = serializers.PrimaryKeyRelatedField(queryset=Task.objects.filter(_retrieved=False))
+
     class Meta:
         model = Assignment
-        fields = ('id', 'task', 'slave', 'get_date_assigned', 'get_date_released')
+        fields = ('id', 'url', 'task', 'slave', 'get_date_assigned', 'get_date_released')
         
+    def get_url(self, object):
+        """ Generate URL for object. """
+        return reverse('api:assignment-detail', args=[object.id])
+    
     def validate_slave(self, slave):
         """ Game logic and some authorization is checked here. """
         print("Slave and Game Logic validation")
@@ -73,12 +84,64 @@ class AssignmentSerializer(serializers.ModelSerializer):
     
 class TaskSerializer(serializers.ModelSerializer):
 #    assignments = AssignmentSerializer(many=True, read_only=False)
-    _yield = serializers.FloatField(default=0.0)
-    
+    _yield      = serializers.FloatField(default=0.0, read_only=True)
+    _fulfilled  = serializers.FloatField(default=0.0, read_only=True)
+    url         = serializers.SerializerMethodField(read_only=True)
+    name        = serializers.SerializerMethodField(read_only=True)
+    percent_finished = serializers.SerializerMethodField(read_only=True)
+    # FIXME Learn to pass request to Serializer and use current user
+#    location    = serializers.PrimaryKeyRelatedField(queryset=Location.objects.filter(region__owner=2))
+    _date_start  = serializers.DateTimeField(read_only=True)
+    _date_finish = serializers.DateTimeField(read_only=True)
+    date_updated = serializers.DateTimeField(read_only=True)
+
     class Meta:
         model = Task
-        fields = ('get_name_readable', 'id', 'type', 'is_retrieved', 'location', 'owner', '_fulfilled', '_yield', 'get_date_start', 'get_date_finish')
-        
+        fields = ('id', 'name', 'url', 'type', 'percent_finished', 'is_retrieved', 'location', 'owner', '_fulfilled', '_yield', '_date_start', '_date_finish', 'date_updated')
+
+    def get_url(self, object):
+        """ Generate URL for object. """
+        return reverse('api:task-detail', args=[object.id])
+
+    def get_name(self, object):
+        """ Get readable name for Task. """
+        return object.get_name_readable()
+
+    def get_percent_finished(self, object):
+        """ Calculate the percentage of finished. """
+        # Farming tasks (time fixed)
+        if object.get_type().is_time_fixed():
+            # Return time delta (now-start)/(finish-start)
+            return 100 if timezone.now() > object.get_date_finish() else \
+                int((timezone.now() - object.get_date_start()) * 100 / \
+                (object.get_date_finish() - object.get_date_start()))
+               
+        # Crafting, building tasks (work fixed)
+        # Return work required - (fulfilled + current_work_per_day * timedelta(estimated_finish - last_update)
+        elif object.get_type().is_work_fixed():
+            work_units = object.get_type().get_param('work_units')
+            fulfilled = object.get_fulfilled()
+            # We get a result of actually fulfilled and saved amount of work
+            result = 100.0 if fulfilled > work_units else \
+                fulfilled * 100.0 / work_units
+                
+            # WARNING! The following can cause high loads. Monitor!
+            # Check if somebody is working on this task now.
+            running_assignments = object.get_assignments(running=True)
+            if running_assignments.count() > 0:
+            # Predict estimate of work done since last Task update.            
+                last_update = object.get_date_updated()
+                current_work_per_day = 0
+                for a in running_assignments:
+                    current_work_per_day += a.get_work_per_day()
+                result += ((timezone.now() - last_update).seconds / GAME_DAY) * current_work_per_day
+            #print("Task {0} is actually {1}% completed.".format(object, result))
+            # We return floored int to avoid float number problems in API.
+            return int(result)
+        else:
+            # In case some new task types appear.
+            return 0
+
 # FIXME!
 # This fucks the task on PUT request. :)))
 # Never use PUT method to update anithing in Task.

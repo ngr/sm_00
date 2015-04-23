@@ -100,12 +100,12 @@ OAUTH2_PROVIDER = {
 
 
 LOGIN_REQUIRED_URLS = (
-    r'/talk/(.*)$',  # TODO interpret this regex.
+#    r'/talk/(.*)$',  # TODO interpret this regex.
 )
 LOGIN_REQUIRED_URLS_EXCEPTIONS = (
-    r'/login(.*)$',
-    r'/logout(.*)$',
-    r'/staff(.*)$',
+#    r'/login(.*)$',
+#    r'/logout(.*)$',
+#    r'/staff(.*)$',
 )
 
 
