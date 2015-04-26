@@ -1,4 +1,5 @@
 ### SLAVE application models ###
+
 import datetime
 from random import random, randrange, choice
 from math import floor

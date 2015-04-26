@@ -1,3 +1,4 @@
+### Skill Serializer ###
 from rest_framework import serializers
 from skill.models import Skill, SkillTrained
        

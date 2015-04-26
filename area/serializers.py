@@ -1,4 +1,5 @@
 # AREA API Serializer #
+
 from django.utils import timezone
 from django.core.urlresolvers import reverse
 from rest_framework import serializers

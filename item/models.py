@@ -1,4 +1,4 @@
-# ITEM application models #
+# ITEM application models # 
 #from django.db.models import Q
 #from django.core.validators import MaxValueValidator, MinValueValidator
 #import operator, functools
