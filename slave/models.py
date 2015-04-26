@@ -267,6 +267,10 @@ class Slave(models.Model):
         return self.get_attribute(attribute)
 
 # SKILLS SECTION
+    def get_skills(self):
+        """ Get a list of already trained skills. """
+        return self.skills
+        
     def get_skill(self, skill):
         """ Get current _skill_ level of Slave. """
         return SkillTrained.objects.get_skill_level(self, skill)

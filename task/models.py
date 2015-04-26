@@ -17,6 +17,7 @@ class AssignmentManager(models.Manager):
 
     def assign(self, task, slave):
         """ Perform the necessary checks and make Assignment """
+        # FIXME! This is not a Manager thing to do. Move this to Assignment->create()
         if not slave.get_location().get_region() == task.get_location().get_region():
             raise AssignmentError("Slave in wrong region")
 
@@ -33,72 +34,33 @@ class AssignmentManager(models.Manager):
         a = Assignment(slave=slave, task=task)
         a.save()
         
-      # Save task again to update estimated _date_finish.
+      # Save task again to update estimated date_finish.
         task.save()
 
         print("Successfully assigned")
 
 class TaskManager(models.Manager):
     """ Operations on multiple Tasks """
-
-    def auth_get_task(self, owner, task=None):
-        """ Return Task or all tasks of 'owner' """
-        args = ()
-        kwargs = {}
-
-        if task:
-            kwargs['pk'] = task
-
-
-# This should be the last param
-        kwargs['owner'] = owner
-        return self.filter(*args, **kwargs)
-
-
+    
     def get_finished(self, ttype=None):
         """ Return all finished not yet retrieved tasks """
         if not ttype:
             print("Return all non-retrieved tasks")
-            return Task.objects.all().filter(_retrieved=0, _date_finish__lte=timezone.now()).all()
+            return Task.objects.all().filter(_retrieved=0, date_finish__lte=timezone.now()).all()
         else:
             print("Returning all tasks of type", ttype)
-            return Task.objects.all().filter(type=ttype, _retrieved=0, _date_finish__lte=timezone.now()).all()
-
-    def auth_get_running_available(self, owner, region=None, ttype=None):
-        """ Return running tasks with free working places """
-        #FIXME Make interactive check if task type has fixed execution time
-        # We now suppose that _date_finish is updated for tasks well. DOesn't matter the type.
-        # This task becomes quite complicated because of complex type inheritance.
-        args = ()
-        kwargs = {}
-        
-      # Add running filter
-        kwargs['_retrieved'] = 0
-        kwargs['_date_finish__gt'] = timezone.now()
-      
-      # Add region filter
-      # We should get the Region instance here.
-        if region:
-            try:
-                kwargs['location__in'] = region.get_locations()
-            except:
-                print("Task->auth_get_running_available() - Could not get region locations")
-            
-
-# This should be the last param
-        kwargs['owner'] = owner
-        return self.filter(*args, **kwargs)
+            return Task.objects.all().filter(type=ttype, _retrieved=0, date_finish__lte=timezone.now()).all()
         
 class TaskDirectory(models.Model):
     name   = models.CharField(max_length=127)
     location_type = models.ForeignKey('area.LocationType')
     area_per_worker = models.PositiveIntegerField(default=1)
 
-    _min_slaves = models.PositiveIntegerField(default=1)
-    _max_slaves = models.PositiveIntegerField(default=1)
+    min_slaves = models.PositiveIntegerField(default=1)
+    max_slaves = models.PositiveIntegerField(default=1)
 
-    _primary_skill = models.ForeignKey('skill.Skill', related_name='+')
-    _secondary_skill   = models.ManyToManyField('skill.Skill', related_name='+')
+    primary_skill = models.ForeignKey('skill.Skill', related_name='+')
+    secondary_skill   = models.ManyToManyField('skill.Skill', related_name='+')
     
     #objects = InheritanceManager()
 
@@ -134,9 +96,9 @@ class TaskDirectory(models.Model):
 
     def is_work_fixed(self):
         """ The task needs some fixed work to be done """
-        # If a subtype has the _work_units attribute then it has work limit
+        # If a subtype has the work_units attribute then it has work limit
         try:
-            return getattr(self, self.get_type())._work_units is not None
+            return getattr(self, self.get_type()).work_units is not None
         except AttributeError:
             return False
 
@@ -167,20 +129,20 @@ class TaskDirectory(models.Model):
         return self.area_per_worker
 
     def get_min_slaves(self):
-        return self._min_slaves
+        return self.min_slaves
 
     def get_max_slaves(self):
-        return self._max_slaves
+        return self.max_slaves
 
     def get_primary_skill(self):
-        if self._primary_skill:
-            return self._primary_skill
+        if self.primary_skill:
+            return self.primary_skill
         else:
             return False
 
     def get_secondary_skill(self):
-        if self._secondary_skill.all().exists():
-            return self._secondary_skill.all()
+        if self.secondary_skill.all().exists():
+            return self.secondary_skill.all()
         else:
             return []
 
@@ -205,7 +167,7 @@ class CraftingTaskDirectory(TaskDirectory):
     """ General subtype of crafting task types. """
 
     item  = models.ForeignKey('item.ItemDirectory', related_name='yeild_item')
-    _work_units  = models.PositiveIntegerField(default=1)
+    work_units  = models.PositiveIntegerField(default=1)
     
     ingredient    = models.ManyToManyField('item.ItemDirectory', through='item.ItemRecipe', through_fields=('task_type', 'ingredient'))
 
@@ -220,12 +182,12 @@ class CraftingTaskDirectory(TaskDirectory):
         return self.item    
 
     def get_work_units(self):
-        return self._work_units    
+        return self.work_units    
       
 class BuildingTaskDirectory(TaskDirectory):
     """ General subtype of building task types. """
 
-    _work_units  = models.PositiveIntegerField(default=1)
+    work_units  = models.PositiveIntegerField(default=1)
     building  = models.ForeignKey('area.LocationDirectory')
 #    material  = models.ManyToManyField('item.MaterialDirectory',\
 #        through='area.BuildingMaterialRecipe',\
@@ -236,7 +198,7 @@ class BuildingTaskDirectory(TaskDirectory):
         return str(self.building) 
 
     def get_work_units(self):
-        return self._work_units    
+        return self.work_units    
     
     def get_building(self):
         return self.building
@@ -246,11 +208,10 @@ class BuildingTaskDirectory(TaskDirectory):
     
     def get_materials(self):
         return self.materials
-
  
 class Task(models.Model):
-    _date_start  = models.DateTimeField()
-    _date_finish = models.DateTimeField()
+    date_start  = models.DateTimeField()
+    date_finish = models.DateTimeField()
     date_updated = models.DateTimeField()
 
     _retrieved  = models.BooleanField(default=False)
@@ -306,10 +267,10 @@ class Task(models.Model):
         return self.type.get_secondary_skill()
 
     def get_date_start(self):
-        return self._date_start
+        return self.date_start
 
     def get_date_finish(self):
-        return self._date_finish
+        return self.date_finish
 
     def get_date_updated(self):
         return self.date_updated
@@ -364,7 +325,7 @@ class Task(models.Model):
         
         # Check if finished the task. Then force soon retrieve.
         if self._fulfilled >= self.type.get_param('work_units'):
-            self._date_finish = timezone.now()
+            self.date_finish = timezone.now()
         
         self.save()
         
@@ -386,10 +347,10 @@ class Task(models.Model):
     def save(self, *args, **kwargs):
         """ We save _dates automatically with no need to override """
         self.clean()
-        if not self._date_start:
-            self._date_start = timezone.now()
-        print("Setting _date_finish to: {0}".format(self.calculate_date_finish()))
-        self._date_finish = self.calculate_date_finish()
+        if not self.date_start:
+            self.date_start = timezone.now()
+        print("Setting date_finish to: {0}".format(self.calculate_date_finish()))
+        self.date_finish = self.calculate_date_finish()
         self.date_updated = timezone.now()
         super(Task, self).save(*args, **kwargs)
 
@@ -705,7 +666,8 @@ class Assignment(models.Model):
         # Experience directly depends on assignment duration
         exp  = int(duration * BASE_EXP_PER_DAY)
         # The part of each secondary skill output depends on their number.
-        exp_for_secondary_skill = int((duration * SECONDARY_SKILLS_EXP_PER_DAY) / ss.count())
+        # If we do not ceil, we can get 0 exp and that is not very good. :(
+        exp_for_secondary_skill = ceil(((duration * SECONDARY_SKILLS_EXP_PER_DAY) / ss.count()))
 
         # Adding exp for Primary Skill.
         if ps in slave_skills:

@@ -8,17 +8,15 @@
 from django.db import models
 from django.db.models import Q
 from django.core.validators import MaxValueValidator, MinValueValidator
-#from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.base import ObjectDoesNotExist
 
 from random import random, randrange
 
-#from slave.models import Slave
 from slave.settings import *
 from slave.helpers import *
 
 class Skill(models.Model):
-    """ This is the main list of skills """
+    """ Directory of available Slave skills. """
 
     name = models.CharField(max_length=127)
     primary_attribute =  models.PositiveSmallIntegerField(choices=ATTRIBUTE_CHOICES)
@@ -69,6 +67,7 @@ class STManager(models.Manager):
 
     def get_available_skills(self, slave):
         """ Return a list of skills with level currently available to train/use """
+    # FIXME! This requires reverse link from skilltrained to skills table!
     # This looks quite comlicated... 
     # The idea is to check if required skills are trained enough to open the new skill
         r = Skill.objects.filter(Q(required_skills__in=Skill.objects.filter(skilltrained__slave=slave,skilltrained__exp__gte=MIN_EXP_FOR_CHILD_SKILLS))|Q(required_skills__isnull=True)).order_by('difficulty').order_by('required_skills', 'difficulty')
@@ -130,13 +129,10 @@ class STManager(models.Manager):
 
 
 class SkillTrained(models.Model):
-    slave = models.ForeignKey('slave.Slave')
+    slave = models.ForeignKey('slave.Slave', related_name='skills')
     skill = models.ForeignKey('Skill')
-#    level = models.PositiveSmallIntegerField(default=1,\
-#            validators=[MinValueValidator(0), MaxValueValidator(100)])
     exp   = models.PositiveIntegerField(default=1,\
             validators=[MinValueValidator(0)])
-
     
     objects = STManager()
 
@@ -146,13 +142,9 @@ class SkillTrained(models.Model):
     class Meta:
         unique_together = (('slave', 'skill'))
 
-################
-#
-###############
-
     def get_skill_exp(self):
         return self.exp
 
+    def get_skill_level(self):
+        return exp_to_lev(self.exp)
 
-
-# Create your models here.

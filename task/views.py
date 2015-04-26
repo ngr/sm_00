@@ -11,7 +11,7 @@ from rest_framework import status
 from rest_framework import generics
 from rest_framework import permissions
 
-from task.serializers import TaskSerializer, AssignmentSerializer
+from task.serializers import TaskSerializer, TaskDetailSerializer, AssignmentSerializer
 from task.tables import ActiveTaskTable
 
 from slave.logic import AssignmentError, TaskError
@@ -157,7 +157,8 @@ class API_TaskList(generics.ListCreateAPIView):
                 status=status.HTTP_403_FORBIDDEN)
 
     # Serialize incoming data as a new Task.
-        serializer = TaskSerializer(data=request.data)
+    # Important to use this one, as validators are in Detailed serializer only.
+        serializer = TaskDetailSerializer(data=request.data)
 
     # Validate data
         # Gameplay rules and more security issues 
@@ -182,7 +183,7 @@ class API_TaskDetail(APIView):
             return Response("Authorization error or wrong Task id.",
                 status=status.HTTP_403_FORBIDDEN)
  
-        serializer = TaskSerializer(task)
+        serializer = TaskDetailSerializer(task)
         return Response(serializer.data) 
 
     def put(self, request, pk, format=None):
@@ -229,7 +230,16 @@ class API_TaskDetail(APIView):
             else:
                 return Response("Error. While retrieving task.",
                     status=status.HTTP_400_BAD_REQUEST)
-           
+        # This action simply updates the auto fields on save()
+        elif self.request.data.get('action') == 'update':
+            try:
+                result = task.save()
+                return Response("Success. Task was updated.", 
+                    status=status.HTTP_202_ACCEPTED)
+            except:
+                return Response("Error. While updating task.",
+                    status=status.HTTP_400_BAD_REQUEST)
+
         # If smth went wrong with validation we return the errors in HTTP status 400.
         return Response("Error. No valid action specified.",
             status=status.HTTP_400_BAD_REQUEST)
