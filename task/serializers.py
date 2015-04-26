@@ -3,8 +3,6 @@ from django.utils import timezone
 from django.core.urlresolvers import reverse
 from rest_framework import serializers
 from task.models import Task, TaskDirectory, Assignment
-#from slave.models import Slave
-#from area.models import Location
 from slave.settings import *
 
 class AssignmentSerializer(serializers.ModelSerializer):
