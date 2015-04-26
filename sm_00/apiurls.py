@@ -15,17 +15,19 @@ urlpatterns = patterns('',
     url(r'^items/$', item_views.API_ItemList.as_view(), name='item-list'),            
     url(r'^item/(?P<pk>[0-9]+)/$', item_views.API_ItemDetail.as_view(), name='item-detail'),
 
-    url(r'^task/$', task_views.API_TaskList.as_view(), name='task-list'),            
+    url(r'^tasks/$', task_views.API_TaskList.as_view(), name='task-list'),            
     url(r'^task/(?P<pk>[0-9]+)/$', task_views.API_TaskDetail.as_view(), name='task-detail'),
     
-    url(r'^assignment/$', task_views.API_AssignmentList.as_view(), name='assignment-list'),
+    url(r'^assignments/$', task_views.API_AssignmentList.as_view(), name='assignment-list'),
     url(r'^assignment/(?P<pk>[0-9]+)/$', task_views.API_AssignmentDetail.as_view(), name='assignment-detail'),
 
     url(r'^regions/$', area_views.API_RegionList.as_view(), name='region-list'),            
+    url(r'^region/(?P<pk>[0-9]+)/$', area_views.API_RegionDetail.as_view(), name='region-detail'),
+
     url(r'^locations/$', area_views.API_LocationList.as_view(), name='location-list'),            
+    url(r'^location/(?P<pk>[0-9]+)/$', area_views.API_LocationDetail.as_view(), name='location-detail'),
+
     url(r'^locationdirectories/$', area_views.API_LocationDirectoryList.as_view(), name='locationdirectory-list'),
     
-    url(r'^region/(?P<pk>[0-9]+)/$', area_views.API_RegionDetail.as_view(), name='region-detail'),
-    url(r'^location/(?P<pk>[0-9]+)/$', area_views.API_LocationDetail.as_view(), name='location-detail'),
 
 )

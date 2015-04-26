@@ -1,11 +1,11 @@
 from datetime import timedelta
-from django.forms import widgets
+#from django.forms import widgets
 from django.utils import timezone
 from django.core.urlresolvers import reverse
 from rest_framework import serializers
 from task.models import Task, TaskDirectory, Assignment
-from slave.models import Slave
-from area.models import Location
+#from slave.models import Slave
+#from area.models import Location
 from slave.settings import *
 
 class AssignmentSerializer(serializers.ModelSerializer):
@@ -81,24 +81,20 @@ class AssignmentSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Assignment error. Slave is not qualified for the task.")
 
         return slave
-    
+
 class TaskSerializer(serializers.ModelSerializer):
-#    assignments = AssignmentSerializer(many=True, read_only=False)
-    _yield      = serializers.FloatField(default=0.0, read_only=True)
-    _fulfilled  = serializers.FloatField(default=0.0, read_only=True)
     url         = serializers.SerializerMethodField(read_only=True)
     name        = serializers.SerializerMethodField(read_only=True)
-    percent_finished = serializers.SerializerMethodField(read_only=True)
-    # FIXME Learn to pass request to Serializer and use current user
-#    location    = serializers.PrimaryKeyRelatedField(queryset=Location.objects.filter(region__owner=2))
-    _date_start  = serializers.DateTimeField(read_only=True)
-    _date_finish = serializers.DateTimeField(read_only=True)
-    date_updated = serializers.DateTimeField(read_only=True)
+    percent_completed = serializers.SerializerMethodField(read_only=True)
+    active_assignments_count = serializers.SerializerMethodField(read_only=True)
+    
+    date_start  = serializers.DateTimeField(read_only=True)
+    date_finish = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = Task
-        fields = ('id', 'name', 'url', 'type', 'percent_finished', 'is_retrieved', 'location', 'owner', '_fulfilled', '_yield', '_date_start', '_date_finish', 'date_updated')
-
+        fields = ('id', 'name', 'url', 'type', 'percent_completed', 'active_assignments_count','is_retrieved', 'location', 'owner', 'date_start', 'date_finish')
+        
     def get_url(self, object):
         """ Generate URL for object. """
         return reverse('api:task-detail', args=[object.id])
@@ -107,7 +103,7 @@ class TaskSerializer(serializers.ModelSerializer):
         """ Get readable name for Task. """
         return object.get_name_readable()
 
-    def get_percent_finished(self, object):
+    def get_percent_completed(self, object):
         """ Calculate the percentage of finished. """
         # Farming tasks (time fixed)
         if object.get_type().is_time_fixed():
@@ -141,6 +137,23 @@ class TaskSerializer(serializers.ModelSerializer):
         else:
             # In case some new task types appear.
             return 0
+            
+    def get_active_assignments_count(self, object):
+        """ Shows the number of active assignments for the task. """
+        return object.get_assignments(running=True).count()
+        
+class TaskDetailSerializer(TaskSerializer):
+    _yield       = serializers.FloatField(default=0.0, read_only=True)
+    _fulfilled   = serializers.FloatField(default=0.0, read_only=True)
+    date_updated = serializers.DateTimeField(read_only=True)
+    assignments  = AssignmentSerializer(many=True, read_only=True)
+    
+    # FIXME Learn to pass request to Serializer and use current user
+#    location    = serializers.PrimaryKeyRelatedField(queryset=Location.objects.filter(region__owner=2))
+
+    class Meta:
+        model = Task
+        fields = ('id', 'name', 'url', 'type', 'percent_completed', 'active_assignments_count','is_retrieved', 'location', 'owner', '_fulfilled', '_yield', 'date_start', 'date_finish', 'date_updated', 'assignments')
 
 # FIXME!
 # This fucks the task on PUT request. :)))
