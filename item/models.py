@@ -5,6 +5,7 @@
 
 import sys
 from django.db import models
+from django.db.models import Sum
 from django.utils import timezone
 
 from slave.settings import *
@@ -61,29 +62,34 @@ class ItemDirectory(models.Model):
 
 class ItemRecipe(models.Model):
     """ Recipes of materials required to craft items. """
-    task_type   = models.ForeignKey('task.CraftingTaskDirectory', unique=True)
+    task_type   = models.ForeignKey('task.CraftingTaskDirectory')
     ingredient  = models.ForeignKey(ItemDirectory, related_name='ingredient')
     amount     = models.PositiveIntegerField(default=1)
     
+    class Meta:
+        unique_together = (('task_type', 'ingredient'))
+        
     def __str__(self):
         return "{0} ingredient - {1}".format(self.task_type, self.ingredient)
     
 class ItemManager(models.Manager):
-    def put(self, itype, location, amount=1):
+    def put(self, item, location, amount=1):
         """ Put amount of items to location. """
-        # Check if a record for this type already exists in this location    
-        piles = self.filter(location=location, itype=itype).all()
+#        print("Putting {0} of {1} to {2}".format(amount, item, location))
+        # Check if a record for this type already exists in this location
+        piles = self.filter(location=location, itype=item).all()
         if piles.count() > 0:
             # Put to this pile
             piles.last().put(amount=amount)
         else:
         # Create a new record (pile)
-            pile = Item(itype=itype, location=location, amount=amount, date_init=timezone.now())
+            pile = Item(itype=item, location=location, amount=amount, date_init=timezone.now())
             pile.save()
+        return True
 
-    def take(self, itype, location, amount=sys.maxsize):
+    def take(self, item, location, amount=sys.maxsize):
         """ Take amount of itype items from location. """
-        piles = self.filter(location=location, itype=itype).all()
+        piles = self.filter(location=location, itype=item).all()
         # In case we do not have any items of this itype return None.
         if piles.count() == 0:
             return None
@@ -97,14 +103,19 @@ class ItemManager(models.Manager):
                     return result
             return result
 
-    def move(self, itype, location, new_location, amount=sys.maxsize):
-        """ Move amount of itype items to from location to new_location. """
+    def move(self, item, location, new_location, amount=sys.maxsize):
+        """ Move amount of items to from location to new_location. """
         # Take the required amount or as much as exists.
-        result = self.take(itype=itype, location=location, amount=amount)
+        result = self.take(item=item, location=location, amount=amount)
         # Put the amount taken to new location
-        self.put(itype=itype, location=new_location, amount=result)
+        self.put(item=item, location=new_location, amount=result)
         
         # FIXME Connect item specific params!
+    def exists(self, item, location, amount=1):
+        """ Check if required amount of itype exists in location. """
+        stored_amount = self.filter(location=location, itype=item).aggregate(sum=Sum('amount'))
+        return amount <= stored_amount['sum']
+        
 
 class Item(models.Model):
     itype   = models.ForeignKey(ItemDirectory)

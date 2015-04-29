@@ -57,10 +57,20 @@ class Region(models.Model):
         """ Return the current owner of the Region. """
         return self.owner
 
-    def get_locations(self):
-        """ Return all Locations of Region. """
-        # Foreign key from Location model.
-        return self.locations.all()
+    def get_locations(self, type=None):
+        """ Return Locations of Region. """
+        # Check the type of requested attribute
+        if isinstance(type, LocationType):
+            location_type = type
+        elif isinstance(type, int):
+            location_type = LocationType.objects.get(pk=type)
+        elif isinstance(type, str):
+            location_type = LocationType.objects.filter(name=type).first()
+        else:
+            location_type = None
+        # Return filtered or clear set of Region Locations.
+        return self.locations.filter(design__type=location_type).all() if location_type\
+            else self.locations.all()
     
     def get_items(self):
         """ Get Items stored in Region Warehouse. """
@@ -148,15 +158,16 @@ class Location(models.Model):
         """ Return the owner of the parent Region. """
         return self.get_region().get_owner()
 
-    def get_tasks(self):
+    def get_tasks(self, running=True):
         """ List of current tasks in Location. """
-        return self.tasks.all()
+        return self.tasks.filter(_retrieved=False, _fulfilled__lt=100.0).all()\
+            if running else self.tasks.all()
         
     def get_free_area(self):
         """ Returns amount of unused area in Location to determine if Task can be created here. """
         # FIXME!
         # Get all Tasks in Location
-        tasks = self.get_tasks()
+        tasks = self.get_tasks(running=True)
         # Get area used by each task
         area_used_by_tasks = [t.get_assignments(running=True).count() \
                 * t.get_type().get_area_per_worker() for t in tasks]

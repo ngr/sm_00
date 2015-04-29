@@ -10,6 +10,7 @@ from model_utils.managers import InheritanceManager
 from django.core.exceptions import ValidationError
 from slave.logic import AssignmentError, TaskError
 
+from item.models import Item, ItemRecipe
 from slave.helpers import *
 from slave.settings import *
 
@@ -171,9 +172,6 @@ class CraftingTaskDirectory(TaskDirectory):
     
     ingredient    = models.ManyToManyField('item.ItemDirectory', through='item.ItemRecipe', through_fields=('task_type', 'ingredient'))
 
-    def __str__(self):
-        return str(self._name)
-
     """ Basic get() methods for CraftingTaskDirectory properties. """
     def get_item(self):
         return self.item    
@@ -183,6 +181,9 @@ class CraftingTaskDirectory(TaskDirectory):
 
     def get_work_units(self):
         return self.work_units    
+    
+    def get_ingredients(self):
+        return ItemRecipe.objects.filter(task_type=self).all()
       
 class BuildingTaskDirectory(TaskDirectory):
     """ General subtype of building task types. """
@@ -347,12 +348,38 @@ class Task(models.Model):
     def save(self, *args, **kwargs):
         """ We save _dates automatically with no need to override """
         self.clean()
+        print(self.get_type_readable())
+        print(self.date_start)
         if not self.date_start:
             self.date_start = timezone.now()
+##### This is the place to make ON FIRST SAVE actions. #####
+            print(self.get_type_readable())
+            if self.get_type_readable() == 'Crafting Task':
+                self.take_ingredients(type='item', amount=1)
+            
         print("Setting date_finish to: {0}".format(self.calculate_date_finish()))
         self.date_finish = self.calculate_date_finish()
         self.date_updated = timezone.now()
         super(Task, self).save(*args, **kwargs)
+
+    def take_ingredients(self, type, amount=1):
+        """ Take ingredients for task from warehouse. """
+        # Determine the recipe
+        # Get a list of items from Recipe
+        if type == 'item':
+            ingredients = self.type.get_param('ingredients')
+ 
+        # Check ingredients
+        hq = self.get_region().get_locations('hq').first()
+        for i in ingredients:
+            if not Item.objects.exists(item=i.ingredient, location=hq, amount=i.amount):
+                raise TaskError("ERROR! Not enough ingredient {0}".format(i.ingredient))
+        
+        # Take ingredients from the warehouse
+        for i in ingredients:
+#            print("Taking {0} of {1}".format(i.amount, i.ingredient))
+            Item.objects.take(item=i.ingredient, location=hq, amount=i.amount)
+        return True
 
     def calculate_date_finish(self):
         """ Automatically calculates estimated finish time of task.
@@ -410,7 +437,6 @@ class Task(models.Model):
                 last_saved_time = timezone.now()
                 
             return last_saved_time + datetime.timedelta(seconds=(days_left * GAME_DAY))
-
          
     def clean(self):
         """ Check the location type vs required one for this type of task """
@@ -485,6 +511,7 @@ class Task(models.Model):
         print("FINISH FARMING")
         amount_produced = 0
         item_produced = self.get_type().get_param('yield_item')
+        warehouse = self.get_region().get_locations(type='hq').first()
       
       # To get base amount produced the amount of fulfilled work  must be equal 
       # to base duration multiplied by PRIMARY_SKILL_WORK_VALUE * 100%
@@ -495,25 +522,26 @@ class Task(models.Model):
         print("The task produced {0} work resulting in {1} of {2}".format(work_fulfilled, amount_produced, item_produced))
         
         try:
-            self.get_region().put_to_warehouse(item_produced, amount_produced)
-        except:
-            print("Some shit while putting item to warehouse")
+            Item.objects.put(item=item_produced, location=warehouse, amount=amount_produced)
+        except Exception:
+            print("ERROR! Some shit while putting farmed item to warehouse.")
         
     def finish_crafting(self):
         """ Put to warehouse crafted items. """
         print("FINISH CRAFTING")
-        item_produced = self.get_type().get_param('yield_item')
         amount_produced = floor(self.get_fulfilled() // self.get_type().get_param('work_units'))
-        print("The task produced {0} work resulting in {1} of {2}".format(self.get_fulfilled(), amount_produced, item_produced))
+        item_produced = self.get_type().get_param('yield_item')
+        work_fulfilled = self.get_fulfilled()
+        warehouse = self.get_region().get_locations(type='hq').first()
+        
+        print("The task produced {0} work resulting in {1} of {2}".format(work_fulfilled, amount_produced, item_produced))
     
       # Now put to warehouse
         try:
-            self.get_region().put_to_warehouse(item_produced, amount_produced)
-        except:
-            print("Some shit while putting item to warehouse")
+            Item.objects.put(item=item_produced, location=warehouse, amount=amount_produced)
+        except Exception:
+            print("ERROR! Some shit while putting crafted item to warehouse")
 
-
-     
     def finish_building(self):
         """ Place new Location. """
         # This is the first draft version. We do not reserve area for location in advance. 
