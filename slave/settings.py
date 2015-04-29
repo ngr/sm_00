@@ -33,8 +33,8 @@ STR = 1
 AGL = 2
 CHR = 3
 
-MALE = True
-FEMALE = False
+MALE = 'm'
+FEMALE = 'f'
 
 BABY_AGE = 5
 CHILD_AGE = 15

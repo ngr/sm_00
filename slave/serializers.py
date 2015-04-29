@@ -43,7 +43,7 @@ class SlaveDetailSerializer(SlaveSerializer):
     
     class Meta:
         model  = Slave
-        fields = ('id', 'url', 'get_name', 'location', 'age', '_date_birth', 'assignments', 'skills')
+        fields = ('id', 'url', 'get_name', 'location', 'age', 'date_birth', 'assignments', 'skills')
             
     def get_assignments(self, object):
         """ Get assignments of Slave. """

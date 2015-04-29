@@ -1,10 +1,10 @@
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
 from sm_00 import views
-from task import views as task_views
-from area import views as area_views
-from item import api_views as item_views
-from slave import api_views as slave_views
+from area   import views as area_views
+from item   import api_views as item_views
+from slave  import api_views as slave_views
+from task   import api_views as task_views
 
 urlpatterns = patterns('',
     # Examples:

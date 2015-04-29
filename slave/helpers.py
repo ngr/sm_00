@@ -126,5 +126,33 @@ def random_line(afile):
         line = aline
     return line
 
+###### QUERY FILTERS ########
+def filter_by_attribute(query, attribute_name, attribute):
+    """ Adds a filter by given attribute to query. """
+    # Make a list of requested values in attribute
+    # May be a plain csv or list/tuple styled csv
+    attribute_list = [x.strip(' []()') for x in attribute.split(',')]
+    attr_filter = {}
+    
+    # Now iterate through the list to check types
+    validated_attribute_list = [] # Used for final attributes of this filter
+    for i in attribute_list:
+        # We do not allow other types than numeric ID.
+        if i.isnumeric():
+            validated_attribute_list.append(i)
+    attr_filter[attribute_name+'__in'] = validated_attribute_list
+    return query.filter(**attr_filter)
 
-
+def filter_by_location_region(query, region):
+    """ Adds a filter by given locations to query. """
+    # Make a list of requested values in region attribute
+    # May be a plain csv or list/tuple styled csv
+    region_list = [x.strip(' []()') for x in region.split(',')]
+    
+    # Now iterate through the list to check types
+    validated_region_list = [] # Used for final attributes of this filter
+    for i in region_list:
+        # We do not allow other types than numeric ID of location.
+        if i.isnumeric():
+            validated_region_list.append(i)
+    return query.filter(location__region__in=validated_region_list)

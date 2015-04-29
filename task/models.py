@@ -24,7 +24,7 @@ class AssignmentManager(models.Manager):
         if not slave.is_free():
             raise AssignmentError("Slave is busy")
 
-        if not self.task.applicable_for_slave(slave):
+        if not task.applicable_for_slave(slave):
             raise AssignmentError("Slave is not trained for this")
         
     # If Task is not yet saved - do it now.
@@ -36,8 +36,8 @@ class AssignmentManager(models.Manager):
         
       # Save task again to update estimated date_finish.
         task.save()
-
         print("Successfully assigned")
+        return True
 
 class TaskManager(models.Manager):
     """ Operations on multiple Tasks """
@@ -666,8 +666,7 @@ class Assignment(models.Model):
         # Experience directly depends on assignment duration
         exp  = int(duration * BASE_EXP_PER_DAY)
         # The part of each secondary skill output depends on their number.
-        # If we do not ceil, we can get 0 exp and that is not very good. :(
-        exp_for_secondary_skill = ceil(((duration * SECONDARY_SKILLS_EXP_PER_DAY) / ss.count()))
+        exp_for_secondary_skill = int((duration * SECONDARY_SKILLS_EXP_PER_DAY) / ss.count())
 
         # Adding exp for Primary Skill.
         if ps in slave_skills:
