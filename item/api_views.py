@@ -25,7 +25,7 @@ class API_ItemList(generics.ListAPIView):
         # simply add some more filters.    
         item_list = Item.objects.filter(location__region__owner=self.request.user)
 
-        # Filter by location
+    # Filter by location
         if 'location' in self.request.query_params:
             # Make a list of requested values in location attribute
             # May be a plain csv or list/tuple styled csv
@@ -39,7 +39,7 @@ class API_ItemList(generics.ListAPIView):
                     validated_location_list.append(i)
             item_list = item_list.filter(location__in=validated_location_list)
         
-        # Filter by itype
+    # Filter by itype
         if 'itype' in self.request.query_params:
             itype_list = [x.strip(' []()') for x in self.request.query_params.get('itype').split(',')]
             
@@ -53,6 +53,21 @@ class API_ItemList(generics.ListAPIView):
                         temp_itype_list.append(itype_q.first())
             itype_list = temp_itype_list
             item_list = item_list.filter(itype__in=itype_list)
+            
+    # FIXME Add accumulation here
+
+    # Paginate
+        # FIXME The build in "LimitOffsetPagination" didn't work
+        # Had to write directly in the view. NEED TO DRY THIS!
+        if any(q for q in self.request.query_params if q in ['limit', 'offset']):
+            if 'limit' in self.request.query_params:
+                limit = int(self.request.query_params.get('limit'))
+            offset = int(self.request.query_params.get('offset'))\
+                if 'offset' in self.request.query_params else 0
+            if 'limit' in locals():
+                item_list = item_list[offset:limit+offset]
+            else:
+                item_list = item_list[offset:]
                     
         return item_list
 

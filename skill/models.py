@@ -32,7 +32,7 @@ class STManager(models.Manager):
         """ This method assignes the 'skill' to 'slave' with 'exp'
             There are certain checks performed here. If you change test well! """
 
-        print("Setting to slave skill with exp:", slave, skill, exp)
+        print("Setting {0} experience in {1} to {2}". format(slave, skill, exp))
 
         exp = fit_to_range_int(exp, 0)
 #        print("Fitted exp:", exp)

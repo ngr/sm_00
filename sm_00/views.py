@@ -66,12 +66,12 @@ def SlaveMasterLogin(request):
               # Save tokens to session
                 request.session['access_token'] = response_json['access_token']
                 request.session['refresh_token'] = response_json['refresh_token']
-
+                
         # Final redirect
                 if request.POST.get('next'):
                     return HttpResponseRedirect(request.POST.get('next'))
                 else:
-                    return HttpResponseRedirect('/')
+                    return HttpResponse(r)
                    
     # In case we do not have a POST request we show the login Form.    
     return render_to_response('sm_00/login.html', context_instance=RequestContext(request))

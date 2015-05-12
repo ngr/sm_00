@@ -55,22 +55,39 @@ class Region(models.Model):
     
     def get_owner(self):
         """ Return the current owner of the Region. """
-        return self.owner
+        return self.owner 
 
-    def get_locations(self, type=None):
+    def get_locations(self, ltype=None, design=None):
         """ Return Locations of Region. """
-        # Check the type of requested attribute
-        if isinstance(type, LocationType):
-            location_type = type
-        elif isinstance(type, int):
-            location_type = LocationType.objects.get(pk=type)
-        elif isinstance(type, str):
-            location_type = LocationType.objects.filter(name=type).first()
+    ## Check the ltype of requested attribute
+        if isinstance(ltype, LocationType):
+            location_type = ltype
+        elif isinstance(ltype, int):
+            location_type = LocationType.objects.get(pk=ltype)
+        elif isinstance(ltype, str):
+            location_type = LocationType.objects.filter(name=ltype).first()
         else:
             location_type = None
-        # Return filtered or clear set of Region Locations.
-        return self.locations.filter(design__type=location_type).all() if location_type\
-            else self.locations.all()
+            
+    ## Check the design of requested attribute
+        if isinstance(design, LocationDirectory):
+            location_design = design
+        elif isinstance(design, int):
+            location_design = LocationDirectory.objects.get(pk=design)
+        elif isinstance(design, str):
+            location_design = LocationDirectory.objects.filter(name=design).first()
+        else:
+            location_design = None
+        
+    ## Make the resulting Queryset
+        q = self.locations.all()
+        if location_type:
+            q = q.filter(design__type=location_type).all()
+        if location_design:
+            q = q.filter(design=location_design).all()
+
+    ## Return filtered or clear set of Region Locations.
+        return q
     
     def get_items(self):
         """ Get Items stored in Region Warehouse. """
@@ -122,8 +139,12 @@ class LocationDirectory(models.Model):
 class BuildingMaterialRecipe(models.Model):
     """ Recipes of materials required to construct Locations. """
     task_type   = models.ForeignKey('task.BuildingTaskDirectory', related_name='materials')
-    material    = models.ForeignKey('item.ItemDirectory')
-    _amount     = models.PositiveIntegerField(default=1)
+    ingredient  = models.ForeignKey('item.ItemDirectory', related_name='building_recipes')
+    amount      = models.PositiveIntegerField(default=1)
+    def __str__(self):
+        """ Return the name of Recipe. """
+        return "{0} for {1} recipe".format(self.ingredient, self.task_type)
+
         
 class Location(models.Model):
     name   = models.CharField(max_length=127, blank=True)

@@ -11,6 +11,7 @@ from django.core.exceptions import ValidationError
 from slave.logic import AssignmentError, TaskError
 
 from item.models import Item, ItemRecipe
+from area.models import Location
 from slave.helpers import *
 from slave.settings import *
 
@@ -170,7 +171,7 @@ class CraftingTaskDirectory(TaskDirectory):
     item  = models.ForeignKey('item.ItemDirectory', related_name='yeild_item')
     work_units  = models.PositiveIntegerField(default=1)
     
-    ingredient    = models.ManyToManyField('item.ItemDirectory', through='item.ItemRecipe', through_fields=('task_type', 'ingredient'))
+#    ingredient    = models.ManyToManyField('item.ItemDirectory', through='item.ItemRecipe', through_fields=('task_type', 'ingredient'))
 
     """ Basic get() methods for CraftingTaskDirectory properties. """
     def get_item(self):
@@ -183,7 +184,7 @@ class CraftingTaskDirectory(TaskDirectory):
         return self.work_units    
     
     def get_ingredients(self):
-        return ItemRecipe.objects.filter(task_type=self).all()
+        return self.ingredients.all()
       
 class BuildingTaskDirectory(TaskDirectory):
     """ General subtype of building task types. """
@@ -207,8 +208,13 @@ class BuildingTaskDirectory(TaskDirectory):
     def get_yield_building(self):
         return self.building
     
+    def get_ingredients(self):
+        """ This is alias of get_materials(). """
+#        Different recipes may call the same shit in a different way.
+        return self.materials.all()
+
     def get_materials(self):
-        return self.materials
+        return self.materials.all()
  
 class Task(models.Model):
     date_start  = models.DateTimeField()
@@ -288,7 +294,7 @@ class Task(models.Model):
         """ Check if there is free space for more assignments. """
         required_area = self.type.get_area_per_worker()
         available_area = self.get_location().get_free_area()
-        print("Location needs {0} area and currently has {1}.".format(required_area, available_area))
+#        print("Location needs {0} area and currently has {1}.".format(required_area, available_area))
         return available_area > required_area
 
     def applicable_for_slave(self, slave):
@@ -348,26 +354,39 @@ class Task(models.Model):
     def save(self, *args, **kwargs):
         """ We save _dates automatically with no need to override """
         self.clean()
-        print(self.get_type_readable())
-        print(self.date_start)
         if not self.date_start:
             self.date_start = timezone.now()
 ##### This is the place to make ON FIRST SAVE actions. #####
-            print(self.get_type_readable())
+            print("First save for task type: {0}".format(self.get_type_readable()))
+    ## Crafting task first save
             if self.get_type_readable() == 'Crafting Task':
-                self.take_ingredients(type='item', amount=1)
-            
+                try:
+                    self.take_ingredients(amount=1)
+                except TaskError as status_message:
+                    print("Couldn't save Task due to: {0}".format(status_message))
+                    return None
+    ## Building task first save
+            elif self.get_type_readable() == 'Building Task':
+            # Take materials
+            # This is not DRYed because more complex action will 
+            # come a bit later (tools etc.)                
+                try:
+                    self.take_ingredients(amount=1)
+                except TaskError as status_message:
+                    print("Couldn't save Task due to: {0}".format(status_message))
+                    return None
+            # FIXME! Should reserve Region AREA at this point!
+                    
         print("Setting date_finish to: {0}".format(self.calculate_date_finish()))
         self.date_finish = self.calculate_date_finish()
         self.date_updated = timezone.now()
         super(Task, self).save(*args, **kwargs)
 
-    def take_ingredients(self, type, amount=1):
+    def take_ingredients(self, amount=1):
         """ Take ingredients for task from warehouse. """
         # Determine the recipe
         # Get a list of items from Recipe
-        if type == 'item':
-            ingredients = self.type.get_param('ingredients')
+        ingredients = self.type.get_param('ingredients')
  
         # Check ingredients
         hq = self.get_region().get_locations('hq').first()
@@ -377,7 +396,7 @@ class Task(models.Model):
         
         # Take ingredients from the warehouse
         for i in ingredients:
-#            print("Taking {0} of {1}".format(i.amount, i.ingredient))
+            print("Taking {0} of {1}".format(i.amount, i.ingredient))
             Item.objects.take(item=i.ingredient, location=hq, amount=i.amount)
         return True
 
@@ -407,16 +426,16 @@ class Task(models.Model):
           # Summarize estimated work from all assignments
             current_work_per_day = 0
             running_assignments = self.get_assignments(running=True)
-#            print("RUNNING ASSIGNMENTS. Number: {0}. Start first: {1}. Start last: {2}.".format( \
-#                running_assignments.count(), \
-#                running_assignments.first().get_date_assigned(), \
-#                running_assignments.last().get_date_assigned() \
-#                ))
+            """print("RUNNING ASSIGNMENTS. Number: {0}. Start first: {1}. Start last: {2}.".format( \
+                running_assignments.count(), \
+                running_assignments.first().get_date_assigned(), \
+                running_assignments.last().get_date_assigned() \
+                ))"""
             for a in running_assignments:
               # Calculate estimated work per second
                 current_work_per_day += a.get_work_per_day()
 
-            print("CURRENT_WORK_PER_DAY", current_work_per_day)
+#            print("CURRENT_WORK_PER_DAY", current_work_per_day)
           # Calculate remaining GAME_DAYs
             if current_work_per_day > 0:
                 days_left = ceil(work_left / current_work_per_day)
@@ -468,11 +487,8 @@ class Task(models.Model):
         else:
             print("No Assignments to release")
 
-        print("Previous Slaves: {0}".format(previous_slaves))
-
 ##########
-        print("Retrieving yield")
-        print(self.type.get_type())
+#        print("Retrieving yield")
         
         if str(self.type.get_type()) == 'farmingtaskdirectory':
             self._retrieved = True
@@ -511,7 +527,7 @@ class Task(models.Model):
         print("FINISH FARMING")
         amount_produced = 0
         item_produced = self.get_type().get_param('yield_item')
-        warehouse = self.get_region().get_locations(type='hq').first()
+        warehouse = self.get_region().get_locations('hq').first()
       
       # To get base amount produced the amount of fulfilled work  must be equal 
       # to base duration multiplied by PRIMARY_SKILL_WORK_VALUE * 100%
@@ -529,14 +545,17 @@ class Task(models.Model):
     def finish_crafting(self):
         """ Put to warehouse crafted items. """
         print("FINISH CRAFTING")
-        amount_produced = floor(self.get_fulfilled() // self.get_type().get_param('work_units'))
+#        amount_produced = floor(self.get_fulfilled() // self.get_type().get_param('work_units'))
+    # We need to take ingredients in case we have occasionally 
+    # produced more then 1 amount. This is not ready, so we fix amount to 1.
+        amount_produced = 1
         item_produced = self.get_type().get_param('yield_item')
         work_fulfilled = self.get_fulfilled()
-        warehouse = self.get_region().get_locations(type='hq').first()
+        warehouse = self.get_region().get_locations('hq').first()
         
         print("The task produced {0} work resulting in {1} of {2}".format(work_fulfilled, amount_produced, item_produced))
     
-      # Now put to warehouse
+    # Now put to warehouse
         try:
             Item.objects.put(item=item_produced, location=warehouse, amount=amount_produced)
         except Exception:
@@ -547,10 +566,21 @@ class Task(models.Model):
         # This is the first draft version. We do not reserve area for location in advance. 
         # We simply create new Location in Region now.
         print("FINISH BUILDING")
-        building_type = self.get_type().get_param('yield_building')
-        new_location = self.get_region().create_location(type=building_type)
-
         
+        region = self.get_region()
+        building_type = self.get_type().get_param('yield_building')
+        name = self.generate_location_name(building_type)
+        print("Creating {0} in {1}".format(building_type, region))
+
+        new_location = Location.objects.create(name=name, region=region, design=building_type)
+                
+        print("Created {0} in {1}".format(new_location, region))
+
+    def generate_location_name(self, design):
+        """ Generates a new name for location. """
+        number_of_locations = self.get_region().get_locations(design=design).count()
+        return "{0} #{1}".format(str(design), str(number_of_locations+1))
+    
     def get_yield_farming(self, strict=False):
     # FIXME TO BE REMOVED FROM HERE!
         """ There can be several primary and secondary skills.

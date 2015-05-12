@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import generics
 from rest_framework import permissions
+from rest_framework import pagination
 
 from slave.models import Slave
 from slave.serializers import SlaveSerializer, SlaveDetailSerializer
@@ -24,7 +25,7 @@ class API_SlaveList(generics.ListAPIView):
         # simply add some more filters.    
         slave_list = Slave.objects.filter(owner=self.request.user)
 
-        # Filter by valid attributes
+    # Filter by valid attributes
         valid_params = ['location', 'sex']
         for attr in valid_params:
             if attr in self.request.query_params:
@@ -32,11 +33,11 @@ class API_SlaveList(generics.ListAPIView):
                     attribute_name=attr,\
                     attribute=self.request.query_params.get(attr))
 
-        # Filter by Region
+    # Filter by Region
         if 'region' in self.request.query_params:
             slave_list = filter_by_location_region(slave_list, self.request.query_params.get('region'))
         
-        # Filter free Slaves
+    # Filter free Slaves
         if 'free' in self.request.query_params:
             # FIXME! This looks quite shitty.
             # We compare the number of assignments to number of released ones.
@@ -46,10 +47,23 @@ class API_SlaveList(generics.ListAPIView):
                 annotate(rel_assgns=Count('assignments__date_released')).\
                 filter(assgns=F('rel_assgns'))
 
-        # Order By
+    # Order By
         # Should one day get the ordering from request.
         slave_list = slave_list.order_by('location', 'date_birth')
-                
+        
+    # Paginate
+        # FIXME The build in "LimitOffsetPagination" didn't work
+        # Had to write directly in the view.
+        if any(q for q in self.request.query_params if q in ['limit', 'offset']):
+            if 'limit' in self.request.query_params:
+                limit = int(self.request.query_params.get('limit'))
+            offset = int(self.request.query_params.get('offset'))\
+                if 'offset' in self.request.query_params else 0
+            if 'limit' in locals():
+                slave_list = slave_list[offset:limit+offset]
+            else:
+                slave_list = slave_list[offset:]
+
         return slave_list
     
     

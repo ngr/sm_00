@@ -4,6 +4,7 @@ import datetime
 from random import random, randrange, choice
 #from math import floor
 from django.db import models
+from django.db.models import Sum
 from django.utils import timezone
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.core.files.storage import FileSystemStorage
@@ -278,7 +279,11 @@ class Slave(models.Model):
     def get_skills(self):
         """ Get a list of already trained skills. """
         return self.skills
-        
+
+    def get_total_exp(self):
+        """ Return accumulated experience for all trained skills. """
+        return SkillTrained.objects.filter(slave=self).aggregate(Sum('exp'))['exp__sum']
+
     def get_skill(self, skill):
         """ Get current _skill_ level of Slave. """
         return SkillTrained.objects.get_skill_level(self, skill)
@@ -288,7 +293,7 @@ class Slave(models.Model):
         return SkillTrained.objects.get_available_skills(self)
 
     def get_trained_skills(self):
-        """ Get a list of skill already trained for non-zero level. """
+        """ Get a dictionary of available skills with level. """
         result = {}
         sk_all = SkillTrained.objects.get_available_skills(self)
         if len(sk_all) > 0:
@@ -298,14 +303,15 @@ class Slave(models.Model):
         
     def add_skill_exp(self, skill, exp=1):
         """ Add some experience for current Skill. """
-        print("Adding {1} exp in {0} for slave {2}".format(skill, exp, self))
-        if not isinstance(skill, Skill):
-            if isinstance(skill, int):
-                sk = Skill.objects.get(pk=skill)
-            else:
-                raise AttributeError("Skill must be <Skill> or int")
-        else:
+#        print("Adding {1} exp in {0} for slave {2}".format(skill, exp, self))
+        if isinstance(skill, Skill):
             sk = skill
+        elif isinstance(skill, int):
+            sk = Skill.objects.get(pk=skill)
+        elif isinstance(skill, str):
+            sk = Skill.objects.get(name=skill)
+        else:
+            raise AttributeError("Skill must be <Skill> or int or str.")
         SkillTrained.objects.add_exp(self, sk, exp)
 
     """

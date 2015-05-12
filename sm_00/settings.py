@@ -57,7 +57,6 @@ INSTALLED_APPS = (
     'area',
     'item',
     'sm_00',
-#    'talk',
     'rest_framework',
     'oauth2_provider',
     'corsheaders',
@@ -72,7 +71,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'talk.middleware.RequireLoginMiddleware',
+#    'talk.middleware.RequireLoginMiddleware',
     'corsheaders.middleware.CorsMiddleware',
 
     'oauth2_provider.middleware.OAuth2TokenMiddleware',
@@ -91,7 +90,9 @@ REST_FRAMEWORK = {
 #    ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
-    )
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    
 } 
 OAUTH2_PROVIDER = {
     # this is the list of available scopes
@@ -99,14 +100,14 @@ OAUTH2_PROVIDER = {
 }
 
 
-LOGIN_REQUIRED_URLS = (
+#LOGIN_REQUIRED_URLS = (
 #    r'/talk/(.*)$',  # TODO interpret this regex.
-)
-LOGIN_REQUIRED_URLS_EXCEPTIONS = (
+#)
+#LOGIN_REQUIRED_URLS_EXCEPTIONS = (
 #    r'/login(.*)$',
 #    r'/logout(.*)$',
 #    r'/staff(.*)$',
-)
+#)
 
 
 ROOT_URLCONF = 'sm_00.urls'

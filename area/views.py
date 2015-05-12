@@ -20,7 +20,7 @@ from area.serializers import RegionSerializer, RegionDetailSerializer, LocationS
 
 class API_RegionList(generics.ListAPIView):
     permission_classes = (permissions.IsAuthenticated,)
-    serializer_class = RegionSerializer 
+    serializer_class = RegionSerializer
 
     def get_queryset(self):
         """ Return Regions of the current user. """
@@ -30,7 +30,21 @@ class API_RegionList(generics.ListAPIView):
         # filtered with authorized regions only so we simply
         # add some more filters.
         region_list = Region.objects.filter(owner=self.request.user)
+
+    # Paginate
+        # FIXME The build in "LimitOffsetPagination" didn't work
+        # Had to write directly in the view. NEED TO DRY THIS!
+        if any(q for q in self.request.query_params if q in ['limit', 'offset']):
+            if 'limit' in self.request.query_params:
+                limit = int(self.request.query_params.get('limit'))
+            offset = int(self.request.query_params.get('offset'))\
+                if 'offset' in self.request.query_params else 0
+            if 'limit' in locals():
+                region_list = region_list[offset:limit+offset]
+            else:
+                region_list = region_list[offset:]
         
+   
         return region_list
 
 class API_LocationList(generics.ListAPIView):
@@ -54,6 +68,19 @@ class API_LocationList(generics.ListAPIView):
                 location_list = location_list.filter(region=int(self.request.query_params['region']))
             except:
                 pass
+        
+    # Paginate
+        # FIXME The build in "LimitOffsetPagination" didn't work
+        # Had to write directly in the view. NEED TO DRY THIS!
+        if any(q for q in self.request.query_params if q in ['limit', 'offset']):
+            if 'limit' in self.request.query_params:
+                limit = int(self.request.query_params.get('limit'))
+            offset = int(self.request.query_params.get('offset'))\
+                if 'offset' in self.request.query_params else 0
+            if 'limit' in locals():
+                location_list = location_list[offset:limit+offset]
+            else:
+                location_list = location_list[offset:]        
         
         return location_list
 
@@ -127,37 +154,3 @@ class API_LocationDetail(APIView):
                 status=status.HTTP_404_NOT_FOUND)
         
         return Response(self.serializer_class(location).data)        
-
-
-"""
-class RegionList(LoginRequiredMixin, generic.ListView):
-#   context_object_name = 'available_regions'
-#   template_name = 'area/index.html'
-    model = Region
-
-
-    def get_queryset(self):
-        "" Return list of available Regions ""
-        print(self.request.user)
-        return Region.objects.auth_get_region(owner=self.request.user)
-
-class RegionDetail(LoginRequiredMixin, generic.DetailView):
-    model = Region
-
-    def get_context_data(self, **kwargs):
-        context = super(RegionDetail, self).get_context_data(**kwargs)
-        self.region = get_object_or_404(Region, pk=kwargs['object'].pk)
-# Authorization check!
-        if not self.region.auth_allowed(self.request.user):
-            self.region = None
-            return HttpResponseForbidden()
-
-        context['housing'] = self.region.get_housing() 
-        context['farming']   = self.region.get_farming_areas()
-        context['inhabitants'] = self.region.get_slaves(withdead=False)
-
-        context['items'] = self.region.get_item_list()
-        return context
-
-"""
-# Create your views here.

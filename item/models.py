@@ -62,9 +62,9 @@ class ItemDirectory(models.Model):
 
 class ItemRecipe(models.Model):
     """ Recipes of materials required to craft items. """
-    task_type   = models.ForeignKey('task.CraftingTaskDirectory')
-    ingredient  = models.ForeignKey(ItemDirectory, related_name='ingredient')
-    amount     = models.PositiveIntegerField(default=1)
+    task_type   = models.ForeignKey('task.CraftingTaskDirectory', related_name='ingredients')
+    ingredient  = models.ForeignKey(ItemDirectory, related_name='recipes')
+    amount      = models.PositiveIntegerField(default=1)
     
     class Meta:
         unique_together = (('task_type', 'ingredient'))
@@ -75,7 +75,7 @@ class ItemRecipe(models.Model):
 class ItemManager(models.Manager):
     def put(self, item, location, amount=1):
         """ Put amount of items to location. """
-#        print("Putting {0} of {1} to {2}".format(amount, item, location))
+        print("Putting {0} of {1} to {2}".format(amount, item, location))
         # Check if a record for this type already exists in this location
         piles = self.filter(location=location, itype=item).all()
         if piles.count() > 0:

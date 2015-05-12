@@ -65,6 +65,19 @@ class API_TaskList(generics.ListCreateAPIView):
                 except:
                     pass
 
+    # Paginate
+        # FIXME The build in "LimitOffsetPagination" didn't work
+        # Had to write directly in the view.
+        if any(q for q in self.request.query_params if q in ['limit', 'offset']):
+            if 'limit' in self.request.query_params:
+                limit = int(self.request.query_params.get('limit'))
+            offset = int(self.request.query_params.get('offset'))\
+                if 'offset' in self.request.query_params else 0
+            if 'limit' in locals():
+                task_list = task_list[offset:limit+offset]
+            else:
+                task_list = task_list[offset:]        
+
         return task_list
 
     def post(self, request):
@@ -205,7 +218,20 @@ class API_AssignmentList(generics.ListCreateAPIView):
                 assignment_list = assignment_list.filter(slave=int(self.request.query_params['slave']))
             except:
                 pass
-         
+
+    # Paginate
+        # FIXME The build in "LimitOffsetPagination" didn't work
+        # Had to write directly in the view.
+        if any(q for q in self.request.query_params if q in ['limit', 'offset']):
+            if 'limit' in self.request.query_params:
+                limit = int(self.request.query_params.get('limit'))
+            offset = int(self.request.query_params.get('offset'))\
+                if 'offset' in self.request.query_params else 0
+            if 'limit' in locals():
+                assignment_list = assignment_list[offset:limit+offset]
+            else:
+                assignment_list = assignment_list[offset:]        
+
         return assignment_list
 
     def post(self, request, format=None):

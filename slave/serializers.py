@@ -14,22 +14,27 @@ from slave.settings import *
 
 class SlaveSerializer(serializers.ModelSerializer):
     """ Basic serializer for listing Slaves. """
-    url         = serializers.SerializerMethodField(read_only=True)
+    name        = serializers.SerializerMethodField(read_only=True)
     age         = serializers.SerializerMethodField(read_only=True)
+    exp         = serializers.SerializerMethodField(read_only=True)
     free        = serializers.SerializerMethodField(read_only=True)
     location    = serializers.PrimaryKeyRelatedField(queryset=Location.objects.filter(design__type=1))
 
     class Meta:
         model = Slave
-        fields = ('id', 'url', 'get_name', 'location', 'age', 'free')
+        fields = ('id', 'name', 'age', 'exp', 'location', 'free')
         
-    def get_url(self, object):
-        """ Generate URL for object. """
-        return reverse('api:slave-detail', args=[object.id])
+    def get_name(self, object):
+        """ Get name of Slave. """
+        return object.get_name()
         
     def get_age(self, object):
         """ Get Age of Slave. """
         return object.get_age()
+
+    def get_exp(self, object):
+        """ Get Total experience of Slave. """
+        return object.get_total_exp()
 
     def get_free(self, object):
         """ Check id Slave has running assignments. """

@@ -32,14 +32,19 @@ class LocationDirectorySerializer(serializers.ModelSerializer):
 
 class LocationSerializer(serializers.ModelSerializer):
     url    = serializers.SerializerMethodField(read_only=True)
+    design = serializers.SerializerMethodField(read_only=True)
 
     def get_url(self, object):
         """ Generate URL for object. """
         return reverse('api:location-detail', args=[object.id])
 
+    def get_design(self, object):
+        """ Generate directory for object. """
+        return str(object.get_design())
+
     class Meta:
         model = Location
-        fields = ('id', 'name', 'url', 'region', 'design')
+        fields = ('id', 'name', 'design', 'url', 'region', 'design')
         
 ### DETAILED SERIALIZERS ###
 class RegionDetailSerializer(serializers.ModelSerializer):
