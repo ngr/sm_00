@@ -208,3 +208,9 @@ class TaskDetailSerializer(TaskSerializer):
         instance._yield         = validated_data.get('_yield', instance._yield)
         instance.save()
         return instance
+
+class TaskDirectorySerializer(serializers.ModelSerializer):
+    """ Serialize TaskDirectory items for interface forms. """
+    class Meta:
+        model = TaskDirectory
+        fields = ('id', 'name', 'location_type', 'area_per_worker', 'max_slaves')

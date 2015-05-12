@@ -93,6 +93,7 @@ def api_root(request, format=None):
         'slaves': reverse('api:slave-list', request=request, format=format),
         'items': reverse('api:item-list', request=request, format=format),
         'tasks': reverse('api:task-list', request=request, format=format),
+        'taskworkflows': reverse('api:taskworkflow-list', request=request, format=format),
         'assignments': reverse('api:assignment-list', request=request, format=format),
         'regions': reverse('api:region-list', request=request, format=format),
         'locations': reverse('api:location-list', request=request, format=format),

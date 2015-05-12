@@ -1,11 +1,4 @@
 # AREA Views #
-#from django.shortcuts import render, get_object_or_404
-#from django.http import HttpResponseRedirect, HttpResponseForbidden
-#from django.core.urlresolvers import reverse
-#from django.contrib.auth.decorators import login_required
-#from django.views import generic
-#from sm_00.mixins import LoginRequiredMixin
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status

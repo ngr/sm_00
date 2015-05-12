@@ -13,21 +13,6 @@ from slave.helpers import *
 from slave.settings import *
 from slave.logic import AreaError
 
-"""class RegionManager(models.Manager):
-    "" The main interface to operate Regions and locations ""
-
-    def auth_get_region(self, owner, region=None):
-        "" Return region or all regions of 'owner' ""
-        args = ()
-        kwargs = {}
-
-        if region: 
-            kwargs['pk'] = region
-
-# This should be the last param
-        kwargs['owner'] = owner
-        return self.filter(*args, **kwargs)
-"""
 class Region(models.Model):
     """ Region is the macro element of area distribution. """
     name = models.CharField(max_length=127)

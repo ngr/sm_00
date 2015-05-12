@@ -25,6 +25,9 @@ urlpatterns = patterns('',
     url(r'^assignments/$', task_views.API_AssignmentList.as_view(), name='assignment-list'),
     url(r'^assignment/(?P<pk>[0-9]+)/$', task_views.API_AssignmentDetail.as_view(), name='assignment-detail'),
 
+    url(r'^taskworkflows/$', task_views.API_TaskWorkflowList.as_view(), name='taskworkflow-list'),            
+
+    
     url(r'^regions/$', area_views.API_RegionList.as_view(), name='region-list'),            
     url(r'^region/(?P<pk>[0-9]+)/$', area_views.API_RegionDetail.as_view(), name='region-detail'),
 

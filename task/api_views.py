@@ -7,9 +7,10 @@ from rest_framework import generics
 from rest_framework import permissions
 
 from slave.logic import AssignmentError, TaskError
-from task.serializers import TaskSerializer, TaskDetailSerializer, AssignmentSerializer
-from task.models import Task, Assignment
-from area.models import Region
+from task.serializers import TaskSerializer, TaskDetailSerializer,\
+    AssignmentSerializer, TaskDirectorySerializer
+from task.models import Task, Assignment, TaskDirectory
+from area.models import Region, LocationType
 
 class API_TaskList(generics.ListCreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
@@ -101,7 +102,6 @@ class API_TaskList(generics.ListCreateAPIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class API_TaskDetail(APIView):
 #    permission_classes = (permissions.IsAuthenticated,)
 
@@ -176,7 +176,6 @@ class API_TaskDetail(APIView):
         # If smth went wrong with validation we return the errors in HTTP status 400.
         return Response("Error. No valid action specified.",
             status=status.HTTP_400_BAD_REQUEST)
-
 
 class API_AssignmentList(generics.ListCreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
@@ -259,7 +258,6 @@ class API_AssignmentList(generics.ListCreateAPIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class API_AssignmentDetail(APIView):
     def get_object(self, pk):
         """ Get already authorized object."""
@@ -311,3 +309,22 @@ class API_AssignmentDetail(APIView):
         # If smth went wrong with validation we return the errors in HTTP status 400.
         return Response("Error. No valid action specified.",
             status=status.HTTP_400_BAD_REQUEST)
+
+class API_TaskWorkflowList(generics.ListAPIView):
+    """ Listing TaskDirectory items for forms. """
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = TaskDirectorySerializer
+
+    def get_queryset(self):
+        """ Return available task workflow list. """
+        task_workflow_list = TaskDirectory.objects.all()
+    
+    # Filter by specific Global Location Type.
+        if 'location_type' in self.request.query_params:
+            q_location = self.request.query_params.get('location_type')
+            if not q_location.isnumeric():
+                q_location = LocationType.objects.filter(name__exact=q_location.title()).first()
+            task_workflow_list = task_workflow_list.filter(location_type=q_location)
+
+        return task_workflow_list
+    

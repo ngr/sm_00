@@ -638,7 +638,6 @@ class Task(models.Model):
     def get_yield_crafting(self):
         pass
         
-
 class Assignment(models.Model):
     """ This class controls assignments of Slaves to Tasks. """
     task     = models.ForeignKey(Task, related_name='assignments')
