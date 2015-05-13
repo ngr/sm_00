@@ -64,6 +64,7 @@ INSTALLED_APPS = (
 )
 
 MIDDLEWARE_CLASSES = (
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -72,12 +73,16 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 #    'talk.middleware.RequireLoginMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-
     'oauth2_provider.middleware.OAuth2TokenMiddleware',
-
-    
+    'sm_00.disable_csrf.DisableCSRF',
 )
+CORS_ORIGIN_ALLOW_ALL = True #FIXME
+CORS_ORIGIN_WHITELIST = (
+        'google.com',
+        'fe.slave.center',
+)
+
+
 AUTHENTICATION_BACKENDS = (
     'oauth2_provider.backends.OAuth2Backend',
     # Uncomment following if you want to access the admin
@@ -180,6 +185,3 @@ CELERY_RESULT_SERIALIZER = 'json'
 
 # Authorization and Authentication
 LOGIN_REDIRECT_URL = '/'
-
-# FIXME This should be temporary for OAuth testing
-CORS_ORIGIN_ALLOW_ALL = True

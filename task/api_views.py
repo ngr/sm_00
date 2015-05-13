@@ -1,5 +1,9 @@
 ### Task API Views ###
 from django.db.models import Q
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from braces.views import CsrfExemptMixin
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -12,10 +16,23 @@ from task.serializers import TaskSerializer, TaskDetailSerializer,\
 from task.models import Task, Assignment, TaskDirectory
 from area.models import Region, LocationType
 
+
+
+class TestPostProcessor(CsrfExemptMixin, APIView):
+    pass
+"""
+    @method_decorator(csrf_exempt)
+    def dispatch(self, *args, **kwargs):
+        return super(TestPostProcessor, self).dispatch(*args, **kwargs)
+    
+    def post(self, request):
+        print("data: {0},  request: {1}".format(request.data.get('owner'), request.user.id))
+        return super(TestPostProcessor, self).post(request, *args, **kwargs) 
+"""
 class API_TaskList(generics.ListCreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = TaskSerializer 
-
+   
     def get_queryset(self):
         """ Return tasks of the current user. 
             You may specify Task or Slave in GET request. """
@@ -85,7 +102,7 @@ class API_TaskList(generics.ListCreateAPIView):
         """ Create a new task. """
 
     # Authorize current user for requested Task.
-        print("data: {0},  request: {1}".format(request.data.get('owner'), request.user.id))
+        print("data: {0},  request: {1}".format(request.data, request.user.id))
         if int(request.data.get('owner')) != request.user.id:
             return Response("Authorization error for this task.",
                 status=status.HTTP_403_FORBIDDEN)

@@ -2,8 +2,12 @@ from django.conf.urls import patterns, include, url
 from django.contrib import admin
 from sm_00 import views
 
+import task.api_views as task_views
+
 urlpatterns = patterns('',
     # Examples:
+    url(r'^test/$', task_views.TestPostProcessor.as_view(), name='test-post-processor'),            
+   
     url(r'^$', views.IndexView.as_view(), name='home'),
     # url(r'^blog/', include('blog.urls')),
 

@@ -66,8 +66,6 @@ class API_SlaveList(generics.ListAPIView):
 
         return slave_list
     
-    
-    
 class API_SlaveDetail(APIView):
     """ Slave Details. """
     permission_classes = (permissions.IsAuthenticated,)
@@ -84,5 +82,5 @@ class API_SlaveDetail(APIView):
         except Slave.DoesNotExist:
             return Response("Authorization error or wrong Slave id.",
                 status=status.HTTP_404_NOT_FOUND)
-        
+        print(slave);
         return Response(self.serializer_class(slave).data)      

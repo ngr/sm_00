@@ -12,7 +12,7 @@ urlpatterns = patterns('',
     # url(r'^blog/', include('blog.urls')),
 
     url(r'^$', views.api_root),
-
+    
     url(r'^slaves/$', slave_views.API_SlaveList.as_view(), name='slave-list'),            
     url(r'^slave/(?P<pk>[0-9]+)/$', slave_views.API_SlaveDetail.as_view(), name='slave-detail'),
 
