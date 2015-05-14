@@ -5,17 +5,12 @@ from sm_00 import views
 import task.api_views as task_views
 
 urlpatterns = patterns('',
-    # Examples:
-    url(r'^test/$', task_views.TestPostProcessor.as_view(), name='test-post-processor'),            
-   
     url(r'^$', views.IndexView.as_view(), name='home'),
-    # url(r'^blog/', include('blog.urls')),
 
     url(r'^admin/', include(admin.site.urls)),
     url(r'^slave/', include('slave.urls', namespace='slave')),
     url(r'^area/', include('area.urls', namespace='area')),
     url(r'^task/', include('task.urls', namespace='task')),
-#    url(r'^accounts/login/$', 'django.contrib.auth.views.login'),
     url(r'^accounts/login/$', 'sm_00.views.SlaveMasterLogin'),
     url(r'^accounts/logout/$', 'django.contrib.auth.views.logout', {'next_page': '/'}),
     url(r'^item/', include('item.urls', namespace='item')),

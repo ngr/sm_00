@@ -4,24 +4,30 @@ from django.utils import timezone
 from django.core.urlresolvers import reverse
 from rest_framework import serializers
 from task.models import Task, TaskDirectory, Assignment
+from item.models import Item
 from slave.settings import *
 
 class AssignmentSerializer(serializers.ModelSerializer):
-    url     = serializers.SerializerMethodField(read_only=True)
+    date_assigned = serializers.SerializerMethodField(read_only=True)
+    date_released = serializers.SerializerMethodField(read_only=True)
     # FIXME Add filter by owner and same for Slave selector.
     task    = serializers.PrimaryKeyRelatedField(queryset=Task.objects.filter(_retrieved=False))
 
     class Meta:
         model = Assignment
-        fields = ('id', 'url', 'task', 'slave', 'get_date_assigned', 'get_date_released')
+        fields = ('id', 'task', 'slave', 'date_assigned', 'date_released')
         
-    def get_url(self, object):
-        """ Generate URL for object. """
-        return reverse('api:assignment-detail', args=[object.id])
+    def get_date_assigned(self, object):
+        """ Get date. """
+        return object.get_date_assigned()
+
+    def get_date_released(self, object):
+        """ Get date. """
+        return object.get_date_released()
     
     def validate_slave(self, slave):
         """ Game logic and some authorization is checked here. """
-        print("Slave and Game Logic validation")
+        #print("Slave and Game Logic validation")
         
     # We make both validation for Slave and Game Logic in this
     # method, to avoid Task and Slave objects move here and there
@@ -34,8 +40,8 @@ class AssignmentSerializer(serializers.ModelSerializer):
         
     # Verify that Slave and Task have the same owner.
         if slave.get_owner() != task.get_owner():
-            print("Owner of slave {0} is {1}, but owner of task {2} is {3}. Failed to assign!" \
-                .format(slave, slave.get_owner(), task, task.get_owner()))
+            #print("Owner of slave {0} is {1}, but owner of task {2} is {3}. Failed to assign!" \
+            #    .format(slave, slave.get_owner(), task, task.get_owner()))
             raise serializers.ValidationError("Authorization error for this Slave.")
 
     # Verify that Task is running.
@@ -69,19 +75,15 @@ class AssignmentSerializer(serializers.ModelSerializer):
 
         # Required primary and secondary skills.
         ps = task.get_primary_skill()
-        ss = task.get_secondary_skill()
 
         if ps in list(slave_skills.keys()) and slave_skills[ps] > 0:
             print("The slave posesses primary skill.")
-        elif any(s in list(slave_skills.keys()) and slave_skills[s] > 0 for s in ss):
-            print("The slave posesses some secondary skill.")
         else:
             raise serializers.ValidationError("Assignment error. Slave is not qualified for the task.")
 
         return slave
 
 class TaskSerializer(serializers.ModelSerializer):
-    url         = serializers.SerializerMethodField(read_only=True)
     name        = serializers.SerializerMethodField(read_only=True)
     percent_completed = serializers.SerializerMethodField(read_only=True)
     active_assignments_count = serializers.SerializerMethodField(read_only=True)
@@ -91,12 +93,8 @@ class TaskSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Task
-        fields = ('id', 'name', 'url', 'type', 'percent_completed', 'active_assignments_count','is_retrieved', 'location', 'owner', 'date_start', 'date_finish')
+        fields = ('id', 'name', 'type', 'percent_completed', 'active_assignments_count', 'is_retrieved', 'location', 'owner', 'date_start', 'date_finish')
         
-    def get_url(self, object):
-        """ Generate URL for object. """
-        return reverse('api:task-detail', args=[object.id])
-
     def get_name(self, object):
         """ Get readable name for Task. """
         return object.get_name_readable()
@@ -139,23 +137,47 @@ class TaskSerializer(serializers.ModelSerializer):
     def get_active_assignments_count(self, object):
         """ Shows the number of active assignments for the task. """
         return object.get_assignments(running=True).count()
-        
+    
+    def  validate(self, data):
+        """ A little gameplay logic validation. """
+    # Verify sufficient materials.
+        # print(data)
+        # A little sleepy now to use cooler search in ordered dictionary
+        # As long as data is OrderedDict we convert it to list and take
+        # the required params only. We need location to determine the region
+        # and the TaskWorkflow to get the recipe.
+        for i in list(data.items()):
+            if i[0] == 'type':
+                type = i[1]
+            elif i[0] == 'location':
+                location = i[1]
+                
+        ingredients = type.get_param('ingredients')
+        #print("INGREDIENTS, SELF:", ingredients, self)
+ 
+        # As long as there might be no ingredient required, it might be False.
+        # Otherwise we check if there are sufficient materials in storage.
+        # This will be checked again later while saving.
+        if ingredients:
+            hq = location.region.get_locations('hq').first()
+            for i in ingredients:
+                if not Item.objects.exists(item=i.ingredient, location=hq, amount=i.amount):
+                    raise serializers.ValidationError( "Not enough ingredient {0}".format(i.ingredient))
+        return data
+    
 class TaskDetailSerializer(TaskSerializer):
     _yield       = serializers.FloatField(default=0.0, read_only=True)
     _fulfilled   = serializers.FloatField(default=0.0, read_only=True)
     date_updated = serializers.DateTimeField(read_only=True)
     assignments  = AssignmentSerializer(many=True, read_only=True)
     
-    # FIXME Learn to pass request to Serializer and use current user
-#    location    = serializers.PrimaryKeyRelatedField(queryset=Location.objects.filter(region__owner=2))
-
     class Meta:
         model = Task
-        fields = ('id', 'name', 'url', 'type', 'percent_completed', 'active_assignments_count','is_retrieved', 'location', 'owner', '_fulfilled', '_yield', 'date_start', 'date_finish', 'date_updated', 'assignments')
+        fields = ('id', 'name', 'type', 'percent_completed', 'active_assignments_count','is_retrieved', 'location', 'owner', '_fulfilled', '_yield', 'date_start', 'date_finish', 'date_updated', 'assignments')
 
 # FIXME!
 # This fucks the task on PUT request. :)))
-# Never use PUT method to update anithing in Task.
+# Never use PUT method to update anything in Task.
 # Task interface should accept only "action".
     def validate__yield(self, value):
         """ Reset yield to zero if new Task posted. """
@@ -180,22 +202,20 @@ class TaskDetailSerializer(TaskSerializer):
 
     # Authorize location.
         if not location.get_owner().id == int(self.initial_data.get('owner')):
-            print("Location owner: {0}, you are: {1}".format(location.get_owner(),
-                    self.initial_data.get('owner')))
-            raise serializers.ValidationError("Error. You are not authorized for this location.")
+            #print("Location owner: {0}, you are: {1}".format(location.get_owner(), self.initial_data.get('owner')))
+            raise serializers.ValidationError("You are not authorized for this location.")
     
     # Verify location type.
         if not location.get_type() == task_type.get_location_type():
-            print (location.get_type())
-            raise serializers.ValidationError("Error. Wrong type of location for the task.")
+            #print (location.get_type())
+            raise serializers.ValidationError("Wrong type of location for the task.")
     
     # Verify free space in location.
         # The actual USE (reservation) of area will happen later on a 
         # per Slave (per Assignment) basis. Still we check for some minimum.
-        print("Location required: {0}, free: {1}".format(task_type.get_area_per_worker(),
-                location.get_free_area()))
+        #print("Location required: {0}, free: {1}".format(task_type.get_area_per_worker(), location.get_free_area()))
         if not location.get_free_area() >= task_type.get_area_per_worker():
-            raise serializers.ValidationError("Error. Not enough minimum free space in location.")
+            raise serializers.ValidationError("Not enough minimum free space in location.")
 
     # Succeeded with Location verification.
         return location
@@ -203,11 +223,12 @@ class TaskDetailSerializer(TaskSerializer):
     def create(self, validated_data):
         return Task.objects.create(**validated_data)
 
-    def update(self, instance, validated_data):
-        instance._fulfilled     = validated_data.get('_fulfilled', instance._fulfilled)
-        instance._yield         = validated_data.get('_yield', instance._yield)
-        instance.save()
-        return instance
+# WHAT IS THIS?????
+#    def update(self, instance, validated_data):
+#        instance._fulfilled     = validated_data.get('_fulfilled', instance._fulfilled)
+#        instance._yield         = validated_data.get('_yield', instance._yield)
+#        instance.save()
+#        return instance
 
 class TaskDirectorySerializer(serializers.ModelSerializer):
     """ Serialize TaskDirectory items for interface forms. """

@@ -17,19 +17,6 @@ from task.models import Task, Assignment, TaskDirectory
 from area.models import Region, LocationType
 from slave.models import Slave
 
-
-
-class TestPostProcessor(CsrfExemptMixin, APIView):
-    pass
-"""
-    @method_decorator(csrf_exempt)
-    def dispatch(self, *args, **kwargs):
-        return super(TestPostProcessor, self).dispatch(*args, **kwargs)
-    
-    def post(self, request):
-        print("data: {0},  request: {1}".format(request.data.get('owner'), request.user.id))
-        return super(TestPostProcessor, self).post(request, *args, **kwargs) 
-"""
 class API_TaskList(generics.ListCreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = TaskSerializer 
@@ -131,7 +118,11 @@ class API_TaskList(generics.ListCreateAPIView):
         # Gameplay rules and more security issues 
         # are processed in serializer validators.
         if serializer.is_valid(request):
-            serializer.save()
+            try:
+                serializer.save()
+            except Exception as error:
+                return Response(error, status=status.HTTP_400_BAD_REQUEST)
+                
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

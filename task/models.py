@@ -661,10 +661,9 @@ class Assignment(models.Model):
         return self.date_released
 
     def get_duration(self):
-        if not self.get_date_released():
-            return timezone.now() - self.get_date_assigned()
-        else:
-            return self.get_date_released() - self.get_date_assigned()
+        """ Returns the actual "working" duration. 
+            Could be shorter than nominal duration as there might be some lag with releasing. """
+        return min(timezone.now(), self.get_date_released(), self.get_task().get_date_finish())  - self.get_date_assigned()
 
     def is_running(self):
         return False if self.date_released else True

@@ -10,10 +10,10 @@ from slave.settings import *
 
 @shared_task
 def retriever(*args, **options):
-    print("Finding finished tasks")
+    #print("Finding finished tasks")
     ttr = Task.objects.get_finished()
     if len(ttr) < 1:
-        print("No finished Tasks to retrieve")
+        #print("No finished Tasks to retrieve")
         return None
 
     print("Retrieving", ttr)
