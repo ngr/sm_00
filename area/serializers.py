@@ -8,15 +8,10 @@ from area.models import Region, Location, LocationDirectory, LocationType
 from item.serializers import ItemShortSerializer
 
 class RegionSerializer(serializers.ModelSerializer):
-    url    = serializers.SerializerMethodField(read_only=True)
-
-    def get_url(self, object):
-        """ Generate URL for object. """
-        return reverse('api:region-detail', args=[object.id])
 
     class Meta:
         model = Region
-        fields = ('id', 'name', 'url', 'area', 'owner')
+        fields = ('id', 'name', 'area', 'owner')
 
 class LocationTypeSerializer(serializers.ModelSerializer):
 
@@ -25,45 +20,44 @@ class LocationTypeSerializer(serializers.ModelSerializer):
         fields = ('id', 'name')
 
 class LocationDirectorySerializer(serializers.ModelSerializer):
+    type_id = serializers.SerializerMethodField(read_only=True)
 
+    def get_type_id(self, object):
+        """ Rename parameter. """
+        return object.id
+    
     class Meta:
         model = LocationDirectory
-        fields = ('id', 'name', 'area', 'type')
+        fields = ('id', 'name', 'area', 'type_id')
 
 class LocationSerializer(serializers.ModelSerializer):
-    url    = serializers.SerializerMethodField(read_only=True)
     design = serializers.SerializerMethodField(read_only=True)
-    type   = serializers.SerializerMethodField(read_only=True)
+    design_id = serializers.SerializerMethodField(read_only=True)
+    type_id   = serializers.SerializerMethodField(read_only=True)
+    region_id   = serializers.SerializerMethodField(read_only=True)
     
-    def get_type(self, object):
-        """ Global type of location Design. """
-        return object.get_design().get_type().id
-
-    def get_url(self, object):
-        """ Generate URL for object. """
-        return reverse('api:location-detail', args=[object.id])
-
     def get_design(self, object):
         """ Generate directory for object. """
         return str(object.get_design())
 
+    def get_design_id(self, object):
+        """ Get design id. """
+        return object.get_design().id
+
+    def get_type_id(self, object):
+        """ Global type of location Design. """
+        return object.get_design().get_type().id
+
+    def get_region_id(self, object):
+        """ Get Region id. """
+        return object.region.id
+
     class Meta:
         model = Location
-        fields = ('id', 'name', 'design', 'type', 'url', 'region', 'design')
+        fields = ('id', 'name', 'design', 'design_id', 'type_id', 'region_id')
         
 ### DETAILED SERIALIZERS ###
-class RegionDetailSerializer(serializers.ModelSerializer):
-    locations = LocationSerializer(many=True, read_only=True)
-    free_area = serializers.SerializerMethodField(read_only=True)
-    def get_free_area(self, object):
-        """ Calculated free area in Region. """
-        return int(object.get_free_area())
-    
-    class Meta:
-        model = Region
-        fields = ('id', 'name', 'area', 'free_area', 'locations', 'owner')
-
-class LocationDetailSerializer(serializers.ModelSerializer):
+class LocationDetailSerializer(LocationSerializer):
     free_area = serializers.SerializerMethodField(read_only=True)
     type = serializers.SerializerMethodField(read_only=True)
     owner = serializers.SerializerMethodField(read_only=True)
@@ -74,7 +68,6 @@ class LocationDetailSerializer(serializers.ModelSerializer):
         items = object.get_items().all()
         serializer = ItemShortSerializer(items, many=True)
         return serializer.data
-
 
     def get_free_area(self, location):
         """ Calculated free area in Location. """
@@ -90,5 +83,15 @@ class LocationDetailSerializer(serializers.ModelSerializer):
         
     class Meta:
         model = Location
-        fields = ('id', 'name', 'free_area', 'region', 'design', 'type', 'owner', 'items')
-        
+        fields = ('id', 'name', 'design', 'design_id', 'type', 'type_id', 'region_id', 'free_area', 'owner', 'items')
+
+class RegionDetailSerializer(serializers.ModelSerializer):
+    locations = LocationSerializer(many=True, read_only=True)
+    free_area = serializers.SerializerMethodField(read_only=True)
+    def get_free_area(self, object):
+        """ Calculated free area in Region. """
+        return int(object.get_free_area())
+    
+    class Meta:
+        model = Region
+        fields = ('id', 'name', 'area', 'free_area', 'locations', 'owner')

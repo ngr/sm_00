@@ -15,6 +15,7 @@ from task.serializers import TaskSerializer, TaskDetailSerializer,\
     AssignmentSerializer, TaskDirectorySerializer
 from task.models import Task, Assignment, TaskDirectory
 from area.models import Region, LocationType
+from slave.models import Slave
 
 
 
@@ -82,6 +83,21 @@ class API_TaskList(generics.ListCreateAPIView):
                     task_list = task_list.filter(type=type)
                 except:
                     pass
+    
+    # Filtering only available for given Slave
+        if 'slave' in self.request.query_params:
+            slave = self.request.query_params.get('slave')
+            if slave.isnumeric():
+                slave = Slave.objects.get(pk=slave)
+            # Check permission
+                if not slave.get_owner() == self.request.user:
+                    print("Auth Error")
+                    return []
+            # Check skills. If Task Primary skill is available then OK.
+                #print(slave.skills.all().values('skill'))
+                task_list = task_list.filter(type__primary_skill__in=slave.skills.all().values('skill')).all()
+            # Check Region
+                task_list = task_list.filter(location__region=slave.location.region).all()
 
     # Paginate
         # FIXME The build in "LimitOffsetPagination" didn't work

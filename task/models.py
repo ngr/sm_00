@@ -235,11 +235,12 @@ class Task(models.Model):
         pass
 
     def __str__(self):
-        return " - ".join([str(self.id), str(self.type.get_type_readable())])
+        """ Return string name to show Task name in API. """
+        return str(self.type)
 
     def get_name_readable(self):
         """ Return string name to show Task name in API. """
-        return " - ".join([str(self.id), str(self.type.get_type_readable())])
+        return str(self.type)
         
     def get_type(self):
         return self.type
@@ -460,10 +461,6 @@ class Task(models.Model):
     def clean(self):
         """ Check the location type vs required one for this type of task """
         if not self.get_location().get_type() == self.get_type().get_location_type():
-#                [i[1] for i in LOCATION_TYPES if i[0] == self.get_type().get_location_type()][0]:
-            #print(self.get_location().get_type())
-            #print(self.get_type().get_location_type())
-#            print([i[1] for i in LOCATION_TYPES if i[0] == self.get_type().get_location_type()])
             raise AssignmentError("Wrong type of location")
 
     def retrieve(self):
@@ -502,7 +499,7 @@ class Task(models.Model):
                 print("Previous Slaves: {0}".format(previous_slaves))
                 for s in previous_slaves:
                     print("Reassigning Slave {0} to Task {1}".format(s, self))
-                    s.assign_to_task(self)
+                    Assignment.objects.assign(task=self, slave=s)
           # Otherwise finish the task
             else:
                 self._retrieved = True
@@ -512,8 +509,8 @@ class Task(models.Model):
           # Check if not all of the required work is finished.  
             if self.get_fulfilled() < self.type.buildingtaskdirectory.get_work_units():
                 for s in previous_slaves:
-                    s.assign_to_task(self)
-
+                    print("Reassigning Slave {0} to Task {1}".format(s, self))
+                    Assignment.objects.assign(task=self, slave=s)
           # Otherwise finish the task
             else:
                 self._retrieved = True

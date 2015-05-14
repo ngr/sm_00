@@ -18,11 +18,12 @@ class SlaveSerializer(serializers.ModelSerializer):
     age         = serializers.SerializerMethodField(read_only=True)
     exp         = serializers.SerializerMethodField(read_only=True)
     free        = serializers.SerializerMethodField(read_only=True)
-    location    = serializers.PrimaryKeyRelatedField(queryset=Location.objects.filter(design__type=1))
+    region_id   = serializers.SerializerMethodField(read_only=True)
+#    location    = serializers.PrimaryKeyRelatedField(queryset=Location.objects.filter(design__type=1))
 
     class Meta:
         model = Slave
-        fields = ('id', 'name', 'age', 'exp', 'location', 'free')
+        fields = ('id', 'name', 'age', 'exp', 'region_id', 'free')
         
     def get_name(self, object):
         """ Get name of Slave. """
@@ -39,16 +40,25 @@ class SlaveSerializer(serializers.ModelSerializer):
     def get_free(self, object):
         """ Check id Slave has running assignments. """
         return object.is_free()
+    
+    def get_region_id(self, object):
+        """ Return ID of current Slave Region. """
+        return object.location.region.id
 
 class SlaveDetailSerializer(SlaveSerializer):
     """ A lot of attributes associated with the Slave. """
     
-    assignments = serializers.SerializerMethodField(read_only=True)
-    skills      = serializers.SerializerMethodField(read_only=True)
+    assignments  = serializers.SerializerMethodField(read_only=True)
+    skills       = serializers.SerializerMethodField(read_only=True)
+    intelligence = serializers.IntegerField(read_only=True)
+    strength     = serializers.IntegerField(read_only=True)
+    agility      = serializers.IntegerField(read_only=True)
+    charisma     = serializers.IntegerField(read_only=True)
     
     class Meta:
         model  = Slave
-        fields = ('id', 'get_name', 'location', 'age', 'date_birth', 'assignments', 'skills')
+        fields = ('id', 'name', 'age', 'exp', 'region_id', 'free', 'date_birth',\
+            'intelligence', 'strength', 'agility', 'charisma', 'happiness', 'assignments', 'skills')
             
     def get_assignments(self, object):
         """ Get assignments of Slave. """
