@@ -174,6 +174,14 @@ class Slave(models.Model):
         """ Return the name of the Slave """
         return self.name
 
+    def get_sex(self):
+        """ Return the sex of the Slave """
+        return self.sex
+
+    def get_race(self):
+        """ Return the race of the Slave """
+        return self.race
+
 # AGE SECTION
     def is_baby(self):
         """ Return if Slave is in 'baby' age period. """
@@ -247,33 +255,6 @@ class Slave(models.Model):
         # Getting is not critical to False is returned
             print("Invalid attribute name for Slave->get_attribute(). Must be name of attribute.")
             return False
-            
-    """    
-    def set_attribute(self, attribute, value):
-        "" Set new value to Slave attribute. ""
-        # This is critical to set exact attribute so full name required here.
-        if not isinstance(attribute, str):
-            raise AttributeError("Wrong input type for Slave->set_attribute()")
-        
-        # Now check if attribute is a correct name of attribute
-        attr_name = clean_string_lower(attribute)
-        if not any(attribute.title() in names for names in ATTRIBUTE_CHOICES):
-            raise AttributeError("Wrong attribute name for Slave->set_attribute()")
-            
-        # Check if value is in correct range
-        if not validate_in_range_int(value, minv=1, maxv=10):
-            raise AttributeError("Wrong value for attribute in Slave->set_attribute()")
-
-        # Now we try to change the attribute
-        try:
-            setattr(self, ''.join(['_', clean_string_lower(attribute)]), value)
-        except:
-        # This is critical to set exact attribute.
-            raise AttributeError("Wrong input for set_attribute()")
-        
-        # Save attribute changes to DB
-        self.save()
-        return self.get_attribute(attribute) """
 
 # SKILLS SECTION
     def get_skills(self):
@@ -313,19 +294,6 @@ class Slave(models.Model):
         else:
             raise AttributeError("Skill must be <Skill> or int or str.")
         SkillTrained.objects.add_exp(self, sk, exp)
-
-    """
-    def ___set_skill(self, skill, exp):
-        "" This is an admin function. Should hide it later. ""
-        print(skill,exp)
-        if not isinstance(skill, Skill):
-            if isinstance(skill, int):
-                sk = Skill.objects.get(pk=skill)
-            else:
-                raise AttributeError("Skill must be <Skill> or int")
-        else:
-            sk = skill
-        SkillTrained.objects.set_st(self, sk, exp) """
 
 ########################
 # TASK SECTON        

@@ -1,106 +1,89 @@
-# SLAVE VIEWS #
-
-from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponse, HttpResponseRedirect
-from django.core.urlresolvers import reverse
-from django.views import generic
-from django.utils import timezone
-from django import forms
-
-from oauth2_provider.views.generic import ProtectedResourceView
-
-import urllib.request
-import json
-import codecs
-import requests
+### Slave API Views ###
+from django.db.models import F, Count
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework import generics
+from rest_framework import permissions
+from rest_framework import pagination
 
 from slave.models import Slave
-from slave.forms import AssignToTaskForm
-from area.models import Region
+from slave.serializers import SlaveSerializer, SlaveDetailSerializer
+from slave.helpers import filter_by_attribute, filter_by_location_region
 
-from sm_00.mixins import LoginRequiredMixin
+class API_SlaveList(generics.ListAPIView):
+    """ List Slaves. """
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class   = SlaveSerializer
 
-class IndexView(LoginRequiredMixin, generic.ListView):
-
-    template_name = 'slave/index.html'
-    context_object_name = 'slaves_list'
-    paginate_by = 15 
     def get_queryset(self):
-#        return Region.objects.all().get(pk=2).get_slaves()
-        print(self.request.user)
-        return Slave.objects.auth_get_slave(owner=self.request.user)
-#       return Slave.objects.filter(
-#               date_birth__lte=timezone.now()
-#               ).order_by('-id')[:5]
+        """ Return Slaves of the current user. """
+            
+    # Authorization check.
+        # We assume later that slave_list is already
+        # filtered with authorized slaves only so we may
+        # simply add some more filters.    
+        slave_list = Slave.objects.filter(owner=self.request.user)
 
-class SlaveView(LoginRequiredMixin, generic.DetailView):
-    model = Slave
-    template_name = 'slave/detail.html'
-    def get_queryset(self):
-        """ Exclude slaves not yet born """
-#        return Slave.objects.filter(date_birth__lte=timezone.now())
-        return Slave.objects.auth_get_slave(owner=self.request.user)
-
-    def get_context_data(self, **kwargs):
-        context = super(SlaveView, self).get_context_data(**kwargs)
-        self.slave = get_object_or_404(Slave, pk=kwargs['object'].pk)
-    
-    # This is the form to assign Slave to any of available Tasks.
-        # Hide slave field. This not for security, just design improvement.
-        context['assign_form'] = AssignToTaskForm(initial={'slave': self.slave.id})
-        context['assign_form'].fields['slave'].widget = forms.HiddenInput()
-   
-        # Add values for Task.
+    # Filter by valid attributes
+        valid_params = ['location', 'sex']
+        for attr in valid_params:
+            if attr in self.request.query_params:
+                slave_list = filter_by_attribute(slave_list,\
+                    attribute_name=attr,\
+                    attribute=self.request.query_params.get(attr))
+                    
+    # Filter by Region
+        if 'region' in self.request.query_params:
+            slave_list = filter_by_location_region(slave_list, self.request.query_params.get('region'))
         
-        if not self.request.session['access_token']:
-        # FIXME Should automatically offer to relogin
-            return context
-#################        
-        payload = {
-                'format': 'json', 
-                'running': '1',                
-            }
-        auth_header = {
-                'Authorization': 'Bearer ' + self.request.session['access_token']
-            }
+    # Filter free Slaves
+        if 'free' in self.request.query_params:
+            # FIXME! This looks quite shitty.
+            # We compare the number of assignments to number of released ones.
+            # If the numbers are equal - then nothing is currently running.
+            # Unfortunately I couldn't yet filter by annotation of NON-released ones.
+            slave_list = slave_list.annotate(assgns=Count('assignments')).\
+                annotate(rel_assgns=Count('assignments__date_released')).\
+                filter(assgns=F('rel_assgns'))
+
+    # Order By
+        # Should one day get the ordering from request.
+        slave_list = slave_list.order_by('location', 'date_birth')
+        
+    # Paginate
+        # FIXME The build in "LimitOffsetPagination" didn't work
+        # Had to write directly in the view.
+        if any(q for q in self.request.query_params if q in ['limit', 'offset']):
+            if 'limit' in self.request.query_params:
+                limit = int(self.request.query_params.get('limit'))
+            offset = int(self.request.query_params.get('offset'))\
+                if 'offset' in self.request.query_params else 0
+            if 'limit' in locals():
+                slave_list = slave_list[offset:limit+offset]
+            else:
+                slave_list = slave_list[offset:]
+
+        return slave_list
+    
+class API_SlaveDetail(APIView):
+    """ Slave Details. """
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class   = SlaveDetailSerializer
+
+    def get_object(self, pk):
+        """ Get already authorized Item."""
+        s = Slave.objects.get(pk=pk, owner=self.request.user)
+        # This updates available skills for the next time
+        s.get_available_skills()
+        return s
+
+    def get(self, request, pk, format=None):
+        # Get authorized Slave
         try:
-            r = requests.get('http://aws00.grischenko.ru:8000/api/task/',
-                headers=auth_header,
-                params=payload)
-            print ("Received JSON from Task App:", r.json())
-        except:
-            print("Error. Failed to get JSON from Task App.")
-                
-        # Add available tasks to context.
-        context['assign_form'].fields['task'].choices = []
-        for task in r.json():
-            context['assign_form'].fields['task'].choices.append((task['id'], task['get_name_readable']))
-
-        return context
-
-def make_happy(request, sid):
-    p = get_object_or_404(Slave, pk=sid)
-    p.happiness = request.POST['happiness']
-    p.save()
-    return HttpResponseRedirect(reverse('slave:results', args=(p.id,)))
-
-def set_skill(request, sid):
-    p = get_object_or_404(Slave, pk=sid)
-    p.add_skill_exp(int(request.POST['skill']), int(request.POST['exp']))
-    return HttpResponseRedirect(reverse('slave:results', args=(p.id,)))
-
-def assign_task(request, sid):
-    form = AssignToTaskForm(request.POST)
-    if form.is_valid():
-        print("Form is OK")
-        return HttpResponseRedirect(reverse('slave:detail', args=(form.cleaned_data['slave'],)))
-    else:
-        print("Error in Form")
-        return HttpResponseRedirect(reverse('slave:results', args=(form.cleaned_data['slave'],)))
-
-class ResultsView(LoginRequiredMixin, generic.DetailView):
-    model = Slave
-    template_name = 'slave/detail.html'
-
-##################
-
+            slave = self.get_object(pk)
+        except Slave.DoesNotExist:
+            return Response("Authorization error or wrong Slave id.",
+                status=status.HTTP_404_NOT_FOUND)
+        print(slave);
+        return Response(self.serializer_class(slave).data)      

@@ -6,6 +6,3 @@ admin.site.register(Location)
 admin.site.register(LocationType)
 admin.site.register(LocationDirectory)
 admin.site.register(BuildingMaterialRecipe)
-
-
-# Register your models here.

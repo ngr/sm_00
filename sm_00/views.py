@@ -1,34 +1,46 @@
 # SM_00 views #
-from base64 import b64encode
-from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponse, HttpResponseRedirect
-from django.core.urlresolvers import reverse
-from django.views.generic.detail import DetailView
-from django.views.generic.base import TemplateView, RedirectView
-from django.views import generic
-from django.utils import timezone
-from slave.models import Slave
-from area.models import Region
-from django.contrib.auth import authenticate, login, logout
-from django.shortcuts import render_to_response, redirect
-from django.template import RequestContext
-
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.reverse import reverse
-from rest_framework import status
-from rest_framework import generics
+from rest_framework.response import Response
 
-from oauth2_provider.views.generic import ProtectedResourceView
-from django.contrib.auth.decorators import login_required
-import requests
-from requests_oauthlib import OAuth1
+#import requests
+#from base64 import b64encode
+#from django.http import HttpResponse, HttpResponseRedirect
+#from django.contrib.auth import authenticate, login, logout
+#from django.shortcuts import render_to_response, redirect
 
-from sm_00.serializers import UserSerializer
-from django.contrib.auth.models import User
+#from django.shortcuts import render, get_object_or_404
+#from django.core.urlresolvers import reverse
+#from django.views.generic.detail import DetailView
+#from django.views.generic.base import TemplateView, RedirectView
+#from django.views import generic
+#from django.utils import timezone
+#from slave.models import Slave
+#from area.models import Region
+#from django.template import RequestContext
+#from rest_framework.views import APIView
+#from rest_framework import status
+#from rest_framework import generics
+#from oauth2_provider.views.generic import ProtectedResourceView
+#from django.contrib.auth.decorators import login_required
+#from requests_oauthlib import OAuth1
+#from sm_00.serializers import UserSerializer
+#from django.contrib.auth.models import User
 
+@api_view(('GET',))
+def api_root(request, format=None):
+    return Response({
+        'slaves': reverse('slave-list', request=request, format=format),
+        'items': reverse('item-list', request=request, format=format),
+        'tasks': reverse('task-list', request=request, format=format),
+        'taskworkflows': reverse('taskworkflow-list', request=request, format=format),
+        'assignments': reverse('assignment-list', request=request, format=format),
+        'regions': reverse('region-list', request=request, format=format),
+        'locations': reverse('location-list', request=request, format=format),
+        'locationdirectories': reverse('locationdirectory-list', request=request, format=format),
+    })
+
+"""
 def SlaveMasterLogin(request):
     logout(request)
     username = password = ''
@@ -75,7 +87,9 @@ def SlaveMasterLogin(request):
                    
     # In case we do not have a POST request we show the login Form.    
     return render_to_response('sm_00/login.html', context_instance=RequestContext(request))
+"""        
 
+"""
 class APIEndpoint(APIView):
     def get(self, request, *args, **kwargs):
         auth_header = {
@@ -86,20 +100,6 @@ class APIEndpoint(APIView):
         result += "Got a token: " + str(request.session['auth_token']) +"\n"
         result += "Got a refresh token: " + str(request.session['refresh_token']) +"\n"
         return HttpResponse(result, status=200)
-        
-@api_view(('GET',))
-def api_root(request, format=None):
-    return Response({
-        'slaves': reverse('api:slave-list', request=request, format=format),
-        'items': reverse('api:item-list', request=request, format=format),
-        'tasks': reverse('api:task-list', request=request, format=format),
-        'taskworkflows': reverse('api:taskworkflow-list', request=request, format=format),
-        'assignments': reverse('api:assignment-list', request=request, format=format),
-        'regions': reverse('api:region-list', request=request, format=format),
-        'locations': reverse('api:location-list', request=request, format=format),
-        'locationdirectories': reverse('api:locationdirectory-list', request=request, format=format),
-    })
-
 
 class LogoutView(RedirectView):
     
@@ -123,3 +123,4 @@ class UserDetail(generics.RetrieveAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
  
+"""

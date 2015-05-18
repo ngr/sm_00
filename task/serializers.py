@@ -8,6 +8,7 @@ from item.models import Item
 from slave.settings import *
 
 class AssignmentSerializer(serializers.ModelSerializer):
+    task_name = serializers.SerializerMethodField(read_only=True)
     date_assigned = serializers.SerializerMethodField(read_only=True)
     date_released = serializers.SerializerMethodField(read_only=True)
     # FIXME Add filter by owner and same for Slave selector.
@@ -15,8 +16,12 @@ class AssignmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Assignment
-        fields = ('id', 'task', 'slave', 'date_assigned', 'date_released')
+        fields = ('id', 'task', 'task_name', 'slave', 'date_assigned', 'date_released')
         
+    def get_task_name(self, object):
+        """ Get task name. """
+        return str(object.task)
+
     def get_date_assigned(self, object):
         """ Get date. """
         return object.get_date_assigned()
@@ -24,7 +29,7 @@ class AssignmentSerializer(serializers.ModelSerializer):
     def get_date_released(self, object):
         """ Get date. """
         return object.get_date_released()
-    
+
     def validate_slave(self, slave):
         """ Game logic and some authorization is checked here. """
         #print("Slave and Game Logic validation")

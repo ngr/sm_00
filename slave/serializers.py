@@ -16,14 +16,15 @@ class SlaveSerializer(serializers.ModelSerializer):
     """ Basic serializer for listing Slaves. """
     name        = serializers.SerializerMethodField(read_only=True)
     age         = serializers.SerializerMethodField(read_only=True)
+    sex         = serializers.CharField(read_only=True)
+    race        = serializers.IntegerField(read_only=True)
     exp         = serializers.SerializerMethodField(read_only=True)
     free        = serializers.SerializerMethodField(read_only=True)
     region_id   = serializers.SerializerMethodField(read_only=True)
-#    location    = serializers.PrimaryKeyRelatedField(queryset=Location.objects.filter(design__type=1))
 
     class Meta:
         model = Slave
-        fields = ('id', 'name', 'age', 'exp', 'region_id', 'free')
+        fields = ('id', 'name', 'age', 'sex', 'race', 'exp', 'region_id', 'free')
         
     def get_name(self, object):
         """ Get name of Slave. """
@@ -57,7 +58,7 @@ class SlaveDetailSerializer(SlaveSerializer):
     
     class Meta:
         model  = Slave
-        fields = ('id', 'name', 'age', 'exp', 'region_id', 'free', 'date_birth',\
+        fields = ('id', 'name', 'age', 'sex', 'race', 'exp', 'region_id', 'free', 'date_birth',\
             'intelligence', 'strength', 'agility', 'charisma', 'happiness', 'assignments', 'skills')
             
     def get_assignments(self, object):

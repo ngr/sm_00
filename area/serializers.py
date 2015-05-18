@@ -5,7 +5,7 @@ from django.core.urlresolvers import reverse
 from rest_framework import serializers
 from rest_framework import pagination
 from area.models import Region, Location, LocationDirectory, LocationType
-from item.serializers import ItemShortSerializer
+from item.serializers import ItemSerializer
 
 class RegionSerializer(serializers.ModelSerializer):
 
@@ -66,7 +66,7 @@ class LocationDetailSerializer(LocationSerializer):
     def get_items(self, object):
         """ List of items. """
         items = object.get_items().all()
-        serializer = ItemShortSerializer(items, many=True)
+        serializer = ItemSerializer(items, many=True)
         return serializer.data
 
     def get_free_area(self, location):
