@@ -20,22 +20,6 @@ class SlaveManager(models.Manager):
 
     APP_ROOT_PATH = '/var/django/sm_00/slave'
 
-    def auth_get_slave(self, owner, slave=None, withdead=False):
-        """ Return slave or all slaves of 'owner' """
-        args = ()
-        kwargs = {}
-
-        if slave:
-            kwargs['pk'] = slave
-
-        if not withdead:
-            kwargs['_date_death__isnull'] = True
-
-
-        # This should be the last param for security reasons
-        kwargs['owner'] = owner
-        return self.filter(*args, **kwargs)
-
     def spawn(self, **kwargs):
         """ Spawn a new slave with random parameters but you can force any in kwargs. """
         larva = self.create(date_birth=timezone.now())
@@ -93,6 +77,14 @@ class SlaveManager(models.Manager):
             larva.name = self.__generate_name(larva.sex, larva.race)
 #        print("Name:", larva.name)
 
+    # Some pre-spawn validation
+        if not larva.owner:
+            raise AttributeError("Owner is required to be set for every slave.")
+        if not larva.location:
+            raise AttributeError("Location is required to be set for every slave.")
+        if not larva.location.region.owner == larva.owner:
+            raise AttributeError("Location doesn't belong to the same owner.")
+        
         larva.save()
        
     # If parents are setin kwargs, make connections
