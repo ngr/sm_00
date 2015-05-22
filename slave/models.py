@@ -90,7 +90,7 @@ class SlaveManager(models.Manager):
     # If parents are setin kwargs, make connections
         if 'parents' in kwargs:
             parents = kwargs['parents']
-            ps = Parents(larva.id)
+            ps = Parent(larva.id)
             ps.save()
             ps.child.add(larva.id)
             if isinstance(parents, int):
@@ -105,28 +105,11 @@ class SlaveManager(models.Manager):
 
         return larva
 
-    """       
-    def kill(self, victim, dd=None):
-        "" Kills the victim. May specify date. ""
-        if not dd:
-            dd = timezone.now()
-#        print("Killing", victim, victim.id)
-
-# Filter() is commented as it seems to be less productive than get->set->save
-#       Slave.objects.filter(pk=victim.id).update(date_death=dd)
-        try:
-            sl = Slave.objects.get(pk=victim.id)
-            sl.date_death = dd
-            sl.save()
-        except Model.DoesNotExist:
-            print("Killing failed")
-            return False
-    """
     def __generate_name(self, sex, race):
         """ Helper to take some random slave name """
         path = FileSystemStorage(location='/'.join([__class__.APP_ROOT_PATH, 'etc']))
         dict_name = 'names_'
-        dict_name += 'male_' if sex == 1 else 'female_'
+        dict_name += 'male_' if sex == 'm' else 'female_'
         dict_name += (str(race)+'.txt')
         file_with_names = open('/'.join([path.location, dict_name]), 'r')
         return random_line(file_with_names).rstrip()
@@ -301,14 +284,9 @@ class Slave(models.Model):
 
 ########################
 # Slave update
-    """
-    def assign_to_task(self, task):
-        print("Assigning {0} to task {1}".format(self, task))
-        Assignment.objects.assign(slave=self, task=task)
-    """
 
-    def employ(self, task_type=None):
-        """ Find job for the Slave. If task_type not given, then add some preferences. """
+    """    def employ(self, task_type=None):
+        "" Find job for the Slave. If task_type not given, then add some preferences. ""
 
         if not self.is_free():
             raise TaskError("WARNING! {0} cannot be employed. Slave is busy already!".format(self))
@@ -331,7 +309,18 @@ class Slave(models.Model):
             task = tasks[0]
             a = Assignment.objects.assign(slave=self, task=task)
             return True if a else False
-        return False
+        return False """        
+        
+    def kill(self):
+        """ Set date of death = kill slave according to logic. """
+        # First check if the slave is currently working and stop that correctly
+        if not self.is_free():
+            running_assignments = self.get_assignments(active=True).all()
+            for a in running_assignments:
+                a.release()
+        # Now set the time of death
+        self.date_death = timezone.now()
+        self.save()
           
 
 #################################
@@ -347,7 +336,11 @@ class RaceDefaults(models.Model):
         return ' '.join([self.race, self.param])
 
 
-class Parents(models.Model):
-    """ This model keeps track of parent relationships. """ 
-    child = models.ManyToManyField(Slave)
-    parent = models.ManyToManyField(Slave, related_name='parent')
+class Parent(models.Model):
+    """ This model keeps track of parent relationships. """
+    date_birth = models.DateTimeField('Date of birth')
+    child = models.ManyToManyField(Slave, related_name='parents')
+    parent = models.ManyToManyField(Slave, related_name='children')
+
+    def __str__(self):
+        return "{0} child of {1}".format(self.child.first(), self.parent.first())
