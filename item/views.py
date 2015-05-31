@@ -104,7 +104,10 @@ class API_ItemDetail(APIView):
             return Response("Missing Location to move to.", status=status.HTTP_400_BAD_REQUEST)
         location = request.data.get('location')
         if not isinstance(location, int):
-            return Response("Destination Location should be an integer ID.", status=status.HTTP_400_BAD_REQUEST)
+            if location.isnumeric():
+                location = int(location)
+            else:
+                return Response("Destination Location should be an integer ID.", status=status.HTTP_400_BAD_REQUEST)
         # Get a Location object to operate with. Authorization a bit later.
         try:
             location = Location.objects.get(pk=location)
