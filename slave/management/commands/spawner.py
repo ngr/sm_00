@@ -1,8 +1,8 @@
 from django.core.management.base import BaseCommand, CommandError
-from slave.tasks import killer
+from slave.tasks import spawner
 
 class Command(BaseCommand):
-    help = "Call kill some slaves task to Celery queue"
+    help = "Call spawn new slaves task to Celery queue"
 
     def handle(self, *args, **options):
-        killer.delay()
+        spawner.delay()

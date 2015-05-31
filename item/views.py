@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework import generics
 from rest_framework import permissions
 
+from area.models import Location
 from item.models import Item, ItemDirectory
 from item.serializers import ItemSerializer, ItemDetailSerializer
 
@@ -85,11 +86,84 @@ class API_ItemDetail(APIView):
         return Item.objects.get(pk=pk, location__region__owner=self.request.user)
 
     def get(self, request, pk, format=None):
-        # Get authorized Item
+    # Get authorized Item
         try:
             item = self.get_object(pk)
         except Item.DoesNotExist:
-            return Response("Authorization error or wrong Item id.",
+            return Response("Authorization error or wrong Item ID.",
                 status=status.HTTP_404_NOT_FOUND)
         
-        return Response(self.serializer_class(item).data)        
+        return Response(self.serializer_class(item).data)
+
+    def patch(self, request, pk):
+        """ Move item or part of it to new location. """
+        # Maybe we should move this method to ItemList view, but this way seems more RESTful.
+    # Get required parameters.
+    # Destination location
+        if not 'location' in request.data:
+            return Response("Missing Location to move to.", status=status.HTTP_400_BAD_REQUEST)
+        location = request.data.get('location')
+        if not isinstance(location, int):
+            return Response("Destination Location should be an integer ID.", status=status.HTTP_400_BAD_REQUEST)
+        # Get a Location object to operate with. Authorization a bit later.
+        try:
+            location = Location.objects.get(pk=location)
+        except Location.DoesNotExist:
+            return Response("Authorization error for destination location.",
+                status=status.HTTP_403_FORBIDDEN)
+        
+    # Get the item to operate with
+        try:
+            item = self.get_object(pk)
+        except Item.DoesNotExist:
+            return Response("Authorization error or wrong Item ID.",
+                status=status.HTTP_404_NOT_FOUND)
+
+    # Amount of items
+        if 'amount' in request.data:
+            amount = request.data.get('amount')
+            if not isinstance(amount, int):
+                if not amount.isnumeric():
+                    return Response("Amount should be numeric.", status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    amount = int(amount)
+        # Check for positive value
+            if amount <= 0:
+                return Response("Amount should be positive.", status=status.HTTP_400_BAD_REQUEST)
+
+        # If set we do not allow to take more then there exist in pile.
+            if amount > item.get_amount():
+                return Response("Requested amount of items exceeds available.", status=status.HTTP_400_BAD_REQUEST)
+        # If not set we take ONE not ALL piece of item.
+        else:
+            amount = 1
+
+    # Check the new location authorization
+        if location.region.get_owner() != request.user and str(location.get_type()) != 'Market':
+            return Response("Authorization error for destination location.",
+                status=status.HTTP_403_FORBIDDEN)
+
+    # Take item from old location
+        try:
+            taken_result = item.take(amount=amount)
+        except:
+            return Response("Some problem taking items.", status=status.HTTP_400_BAD_REQUEST)
+
+    # Put item to new location
+        try:
+            Item.objects.put(item=item.get_type(), location=location, amount=taken_result)
+        except:
+            return Response("Some problem putting items.", status=status.HTTP_400_BAD_REQUEST)
+    # Hallelujah!
+        return Response("OK", status=status.HTTP_200_OK)
+"""
+"""
+
+
+
+
+
+
+
+
+
