@@ -1,10 +1,9 @@
-"Slave Master"
+"Slave Center"
 ==
-This document describes the idea of the game.
-"Slave Master" is a temporary name. In case the game would ever be launched there is a great law and ethics research required to fix all the possible infringements.
 
-The idea is to create a single/multiplayer online game with an idea of mastering slaves. This is an infinite business strategy not an "adult" game. Still there is violence possible. The player may choose his business type and get some initial slaves to develop.
+"Slave Center" is a MMO Economics Strategy with players represented by Slave Masters in the game. They own some territory and slaves to operate with. This can be played both as "Tamagotchi" just for fun, or as a serious microeconomics emulation if you feel you can affect the game world after some time.
 
 More info to be found in Wiki.
+http://wiki.slave.center/
 
-(c) 2014 ngr
+(c) 2014-2015 ngr
