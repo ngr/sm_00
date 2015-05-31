@@ -123,22 +123,14 @@ WSGI_APPLICATION = 'sm_00.wsgi.application'
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
 
 DATABASES = {
-    'old': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'dj_sm_00',
-        'HOST': '127.0.0.1',
-        'USER': 'dj_dbuser',
-        'PASSWORD': 'P@ssw0rd',
-        'PORT': '3306',
-    },
-    'db_task': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'dj_sm_01',
-        'HOST': '127.0.0.1',
-        'USER': 'dj_dbuser',
-        'PASSWORD': 'P@ssw0rd',
-        'PORT': '3306',
-    },
+#    'db_task': {
+#        'ENGINE': 'django.db.backends.mysql',
+#        'NAME': 'dj_sm_01',
+#        'HOST': '127.0.0.1',
+#        'USER': 'dj_dbuser',
+#        'PASSWORD': 'P@ssw0rd',
+#        'PORT': '3306',
+#    },
         'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'dj_sm_00',
