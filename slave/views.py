@@ -25,6 +25,13 @@ class API_SlaveList(generics.ListAPIView):
         # simply add some more filters.    
         slave_list = Slave.objects.filter(owner=self.request.user)
 
+    # Default filter alive slave only.
+        # Reversed order because alive are much more frequent requests.
+        if not 'dead' in self.request.query_params:
+            slave_list = slave_list.filter(date_death__isnull=True)
+        else:
+            slave_list = slave_list.filter(date_death__isnull=False)
+
     # Filter by valid attributes
         valid_params = ['location', 'sex']
         for attr in valid_params:
