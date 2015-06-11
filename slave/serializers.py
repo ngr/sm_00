@@ -49,8 +49,8 @@ class SlaveSerializer(serializers.ModelSerializer):
 
     def get_assignment(self, object):
         """ Get running assignment. """
-        assignment = object.assignments.last()
-        return AssignmentSerializer(assignment, read_only=True).data if assignment.is_running() else None
+        assignment = object.get_assignments(active=True).last()
+        return AssignmentSerializer(assignment, read_only=True).data if assignment else None
 
 class SlaveDetailSerializer(SlaveSerializer):
     """ A lot of attributes associated with the Slave. """
