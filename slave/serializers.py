@@ -21,11 +21,11 @@ class SlaveSerializer(serializers.ModelSerializer):
     exp         = serializers.SerializerMethodField(read_only=True)
     free        = serializers.SerializerMethodField(read_only=True)
     region_id   = serializers.SerializerMethodField(read_only=True)
-    assignment  = serializers.SerializerMethodField(read_only=True)
+    assignments = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Slave
-        fields = ('id', 'name', 'age', 'sex', 'race', 'exp', 'region_id', 'free', 'assignment')
+        fields = ('id', 'name', 'age', 'sex', 'race', 'exp', 'region_id', 'free', 'assignments')
         
     def get_name(self, object):
         """ Get name of Slave. """
@@ -47,10 +47,10 @@ class SlaveSerializer(serializers.ModelSerializer):
         """ Return ID of current Slave Region. """
         return object.location.region.id
 
-    def get_assignment(self, object):
-        """ Get running assignment. """
-        assignment = object.get_assignments(active=True).last()
-        return AssignmentSerializer(assignment, read_only=True).data if assignment else None
+    def get_assignments(self, object):
+        """ Get running assignments. """
+        assignments = object.get_assignments(active=True).last()
+        return AssignmentSerializer(assignments, read_only=True).data if assignments else None
 
 class SlaveDetailSerializer(SlaveSerializer):
     """ A lot of attributes associated with the Slave. """
