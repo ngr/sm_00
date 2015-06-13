@@ -9,6 +9,8 @@ from slave.settings import *
 
 class AssignmentSerializer(serializers.ModelSerializer):
     task_name = serializers.SerializerMethodField(read_only=True)
+    task_workflow = serializers.SerializerMethodField(read_only=True)
+    task_type = serializers.SerializerMethodField(read_only=True)
     date_assigned = serializers.SerializerMethodField(read_only=True)
     date_released = serializers.SerializerMethodField(read_only=True)
     # FIXME Add filter by owner and same for Slave selector.
@@ -16,11 +18,19 @@ class AssignmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Assignment
-        fields = ('id', 'task', 'task_name', 'slave', 'date_assigned', 'date_released')
+        fields = ('id', 'task', 'task_name', 'task_workflow', 'task_type', 'slave', 'date_assigned', 'date_released')
         
     def get_task_name(self, object):
         """ Get task name. """
         return str(object.task)
+
+    def get_task_workflow(self, object):
+        """ Get task workflow. """
+        return object.task.type.id
+
+    def get_task_type(self, object):
+        """ Get task type. """
+        return object.task.type.get_type_readable()
 
     def get_date_assigned(self, object):
         """ Get date. """

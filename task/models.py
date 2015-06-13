@@ -360,14 +360,14 @@ class Task(models.Model):
 ##### This is the place to make ON FIRST SAVE actions. #####
             print("First save for task type: {0}".format(self.get_type_readable()))
     ## Crafting task first save
-            if self.get_type_readable() == 'Crafting Task':
+            if self.get_type_readable() == 'Crafting':
                 try:
                     self.take_ingredients(amount=1)
                 except TaskError as status_message:
                     print("Couldn't save Task due to: {0}".format(status_message))
                     return None
     ## Building task first save
-            elif self.get_type_readable() == 'Building Task':
+            elif self.get_type_readable() == 'Building':
             # Take materials
             # This is not DRYed because more complex action will 
             # come a bit later (tools etc.)                

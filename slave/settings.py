@@ -91,9 +91,9 @@ FIXED_TIME_TASK_TYPES = ('farmingtaskdirectory')
 FIXED_WORK_TASK_TYPES = ('craftingtaskdirectory', 'buildingtaskdirectory')
 
 TASK_DIRECTORIES = (
-        ('farmingtaskdirectory', 'Farming Task'),
-        ('craftingtaskdirectory', 'Crafting Task'),
-        ('buildingtaskdirectory', 'Building Task'),
+        ('farmingtaskdirectory', 'Farming'),
+        ('craftingtaskdirectory', 'Crafting'),
+        ('buildingtaskdirectory', 'Building'),
 )
 
 LOCATION_TYPES = (
