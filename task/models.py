@@ -711,7 +711,8 @@ class Assignment(models.Model):
         # We use only full Game days. If the assignment was shorter 
         # - no training and no fulfilled work happens. 
         # This should prevent any possible short assignments bugs.
-        duration = datetime.timedelta.total_seconds(self.get_duration()) / GAME_DAY
+        # We also ensure that duration is positive.
+        duration = max(0, (datetime.timedelta.total_seconds(self.get_duration()) / GAME_DAY))
         print("The total duration of assignment was {0} GAME DAYS".format(duration))
         
       # WORK REQUIRED
