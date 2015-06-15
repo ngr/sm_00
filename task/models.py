@@ -300,7 +300,7 @@ class Task(models.Model):
         required_area = self.type.get_area_per_worker()
         available_area = self.get_location().get_free_area()
 #        print("Location needs {0} area and currently has {1}.".format(required_area, available_area))
-        return available_area > required_area
+        return available_area >= required_area
 
     def applicable_for_slave(self, slave):
         """ Check if Slave possesses required skills for this Task """
