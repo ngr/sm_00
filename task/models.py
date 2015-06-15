@@ -680,8 +680,10 @@ class Assignment(models.Model):
         self.clean()
         if not self.date_assigned:
             self.date_assigned = timezone.now()
-            logger.info("Assignment: {0} - Saved with date: {1}.".format(self.id, self.date_assigned))
+            logger.info("Assignment: {0} - Creating new with date: {1}.".format(self.id, self.date_assigned))
+
         super(Assignment, self).save(*args, **kwargs)
+        logger.info("Assignment: {0} - Saved with date: {1}.".format(self.id, self.date_assigned))
         
     def clean(self):
         """ Check if Assignment is going to be valid """
@@ -690,7 +692,7 @@ class Assignment(models.Model):
         if not self.task.has_open_vacancy() and self.is_running():
             raise AssignmentError("Too many slaves for this task")
 
-        if not self.task.has_free_space_in_location():
+        if not self.task.has_free_space_in_location() and self.is_running():
             raise AssignmentError("There is no free space in Location of this task")
 
     def release(self):
