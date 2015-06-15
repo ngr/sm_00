@@ -1,4 +1,6 @@
 ### SLAVE application models ###
+import logging
+logger = logging.getLogger(__name__)
 
 import datetime
 from random import random, randrange, choice
@@ -52,7 +54,7 @@ class SlaveManager(models.Manager):
     # Now setting rest of hard set in kwargs
         for param, value in kwargs.items():
             if param not in VALID_ATTRIBS: 
-                print("BAD PARAM", param)
+                logger.error("slave->SlaveManager->spawn received BAD PARAM:", param)
                 continue
             # FIXME Try to use ints without fetching User and Location
             # Get Owner if specified int
@@ -103,6 +105,7 @@ class SlaveManager(models.Manager):
                 for p in parents:
                     ps.parent.add(p)
 
+        logger.info("User: {0} - A new slave was spawned: {1}".format(larva.owner, larva))
         return larva
 
     def __generate_name(self, sex, race):
@@ -216,7 +219,7 @@ class Slave(models.Model):
         """ Return the current value of Slave attribute. Attribute must be string. """
         # Check validity of type
         if not isinstance(attribute, str):
-            print("Invalid type for Slave->get_attribute. Must be name of attribute in string.")
+            logger.warning("Invalid type for Slave->get_attribute. Must be name of attribute in string.")
             return False
 
         # If requested string check if it works
@@ -228,7 +231,7 @@ class Slave(models.Model):
             return getattr(self, attr_name)
         except:
         # Getting is not critical to False is returned
-            print("Invalid attribute name for Slave->get_attribute(). Must be name of attribute.")
+            logger.warning("Invalid attribute name for Slave->get_attribute(). Must be name of attribute.")
             return False
 
 # SKILLS SECTION
@@ -259,7 +262,8 @@ class Slave(models.Model):
         
     def add_skill_exp(self, skill, exp=1):
         """ Add some experience for current Skill. """
-#        print("Adding {1} exp in {0} for slave {2}".format(skill, exp, self))
+        # This is not a RESTful way, but we assume that Exp can never be controlled by human.
+        # So we leave this method in slave application and call it from here.
         if isinstance(skill, Skill):
             sk = skill
         elif isinstance(skill, int):
@@ -269,6 +273,7 @@ class Slave(models.Model):
         else:
             raise AttributeError("Skill must be <Skill> or int or str.")
         SkillTrained.objects.add_exp(self, sk, exp)
+        logger.info("User: {0} - Slave: {1} - Received {2} experience for skill {3}.".format(self.owner, self, exp, skill))
 
 ########################
 # TASK SECTON        
@@ -321,6 +326,8 @@ class Slave(models.Model):
         # Now set the time of death
         self.date_death = timezone.now()
         self.save()
+        logger.info("User: {0} - Slave: {1} - Slave died at: {2}.".format(self.owner, self, self.date_death))
+        
           
 
 #################################

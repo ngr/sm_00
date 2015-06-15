@@ -1,4 +1,7 @@
 ### TASK application models ###
+import logging
+logger = logging.getLogger(__name__)
+
 import datetime
 from random import random, randrange, choice
 from math import ceil, floor
@@ -38,7 +41,8 @@ class AssignmentManager(models.Manager):
         
       # Save task again to update estimated date_finish.
         task.save()
-        print("Successfully assigned")
+        logger.info("User: {0} - Slave: {1} - Task: {2} Successfully assigned with assignment {3}."\
+            .format(slave.owner, slave, task, a))
         return True
 
 class TaskManager(models.Manager):
@@ -47,10 +51,10 @@ class TaskManager(models.Manager):
     def get_finished(self, ttype=None):
         """ Return all finished not yet retrieved tasks """
         if not ttype:
-            print("Return all non-retrieved tasks")
+            logger.info("Return all non-retrieved tasks")
             return Task.objects.all().filter(_retrieved=0, date_finish__lte=timezone.now()).all()
         else:
-            print("Returning all tasks of type", ttype)
+            logger.info("Returning all tasks of type", ttype)
             return Task.objects.all().filter(type=ttype, _retrieved=0, date_finish__lte=timezone.now()).all()
         
 class TaskDirectory(models.Model):
@@ -675,10 +679,10 @@ class Assignment(models.Model):
     def save(self, *args, **kwargs):
         self.clean()
         if not self.date_assigned:
-            print("Setting Assignment date")
             self.date_assigned = timezone.now()
+            logger.info("Assignment: {0} - Saved with date: {1}.".format(self.id, self.date_assigned))
         super(Assignment, self).save(*args, **kwargs)
-
+        
     def clean(self):
         """ Check if Assignment is going to be valid """
         # We check if_running to skip this verification
@@ -694,9 +698,9 @@ class Assignment(models.Model):
         Yield and production are calculated here. Slave new Experience also. """
     # Check if Assignment is not released already 
         if not self.is_running():
-            print("Assignment is already released")
+            logger.warning("Assignment {0} - Already released.".format(self))
             return False
-        print("Releasing assignment {0}".format(self))
+
         # Now the duration will count till this date_released point.
         # In case of bugs your may need to extra save() here.
         self.date_released = timezone.now()
@@ -724,22 +728,23 @@ class Assignment(models.Model):
 
         # Adding exp for Primary Skill.
         if ps in slave_skills:
-            print("{0} gained {1} experience for {2}".format(self.get_slave(), exp, ps))
+            logger.debug("{0} gained {1} experience for {2}".format(self.get_slave(), exp, ps))
             self.slave.add_skill_exp(ps, exp)
             
         for s in ss:
             if s in slave_skills:
-                print("{0} gained {1} experience for {2}".format(self.slave, exp_for_secondary_skill, s))
+                logger.debug("{0} gained {1} experience for {2}".format(self.slave, exp_for_secondary_skill, s))
                 self.slave.add_skill_exp(s, exp_for_secondary_skill)
                 
         
         # Calculate and update work_units for parent Task.
-#        print(duration, self.get_work_per_day())
+        #logger.debug(duration, self.get_work_per_day())
         assignment_work = duration * self.get_work_per_day()
-        print("Total work produced by Assignment is: {0}".format(assignment_work))
+        logger.debug("Total work produced by Assignment is: {0}".format(assignment_work))
 
         self.task.add_fulfilled(amount=assignment_work)
         self.save()
+        logger.info("Assignment: {0} - Released. Produced {1} of work for task {2}.".format(self.id, assignment_work, self.task.id))
         return True
         
     def get_work_per_day(self):
