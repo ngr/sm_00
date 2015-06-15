@@ -1,5 +1,6 @@
 ### Task API Views ###
-from django.db.models import Q
+from django.db.models import Q, Count
+
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from braces.views import CsrfExemptMixin
@@ -85,6 +86,17 @@ class API_TaskList(generics.ListCreateAPIView):
                 task_list = task_list.filter(type__primary_skill__in=slave.skills.all().values('skill')).all()
             # Check Region
                 task_list = task_list.filter(location__region=slave.location.region).all()
+
+    # Order by assignments
+        if 'orderBy' in self.request.query_params:
+            order = self.request.query_params.get('orderBy')
+        # First we order by number of assignments
+            if 'assignments' in order:
+                task_list = task_list.annotate(num_assignments=Count('assignments')).order_by('num_assignments')
+        # Then by estimated date finish.            
+            if 'date_finish' in order:
+                task_list = task_list.order_by('date_finish')
+            
 
     # Paginate
         # FIXME The build in "LimitOffsetPagination" didn't work
