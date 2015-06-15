@@ -174,8 +174,6 @@ class CraftingTaskDirectory(TaskDirectory):
 
     item  = models.ForeignKey('item.ItemDirectory', related_name='yeild_item')
     work_units  = models.PositiveIntegerField(default=1)
-    
-#    ingredient    = models.ManyToManyField('item.ItemDirectory', through='item.ItemRecipe', through_fields=('task_type', 'ingredient'))
 
     """ Basic get() methods for CraftingTaskDirectory properties. """
     def get_item(self):
@@ -189,6 +187,25 @@ class CraftingTaskDirectory(TaskDirectory):
     
     def get_ingredients(self):
         return self.ingredients.all()
+
+class HarvestingTaskDirectory(TaskDirectory):
+    """ General subtype of harvesting task types. """
+
+    item  = models.ForeignKey('item.ItemDirectory', related_name='+')
+    work_units  = models.PositiveIntegerField(default=1)
+
+    """ Basic get() methods for CraftingTaskDirectory properties. """
+    def get_item(self):
+        """ Return the harvested item type. """
+        return self.item    
+
+    def get_yield_item(self):
+        """ Alias for get_item() """
+        return self.item    
+
+    def get_work_units(self):
+        """ Return required work units to harvest the item. """
+        return self.work_units    
       
 class BuildingTaskDirectory(TaskDirectory):
     """ General subtype of building task types. """
@@ -362,7 +379,7 @@ class Task(models.Model):
         if not self.date_start:
             self.date_start = timezone.now()
 ##### This is the place to make ON FIRST SAVE actions. #####
-            print("First save for task type: {0}".format(self.get_type_readable()))
+            logger.info("First save for task type: {0}".format(self.get_type_readable()))
     ## Crafting task first save
             if self.get_type_readable() == 'Crafting':
                 try:
@@ -445,7 +462,9 @@ class Task(models.Model):
             if current_work_per_day > 0:
                 days_left = ceil(work_left / current_work_per_day)
             else:
-                days_left = ceil(work_left)
+                #days_left = ceil(work_left)
+                # We hardcode time here to refresh hung tasks at least once per year.
+                days_left = 360
             
           # Return Estimated time of finish.
           # We take the start time of the first assignment and calculate
@@ -468,7 +487,7 @@ class Task(models.Model):
             raise AssignmentError("Wrong type of location")
 
     def retrieve(self):
-        print("Retrieving task:", self)
+        logger.info("Task: {0} - Retrieving.".format(self))
 
         if not self.is_finished():
             raise TaskError("Task is not finished yet.")
@@ -476,17 +495,17 @@ class Task(models.Model):
         if self.is_retrieved():
             raise TaskError("Task was already retrieved.")
 
-        print("Cancelling assignments")
+        #print("Cancelling assignments")
         current_assignments = self.get_assignments(running=True)
       # In case we did not yet finish, we shall assign the same slaves again.
         previous_slaves = []
         if len(current_assignments) > 0:
             for a in current_assignments:
-                print("{0} is released".format(a.get_slave()))
+                #print("{0} is released".format(a.get_slave()))
                 previous_slaves.append(a.get_slave())
                 a.release()
         else:
-            print("No Assignments to release")
+            logger.info("Task: {0} - No Assignments to release.".format(self))
 
 ##########
 #        print("Retrieving yield")
@@ -497,17 +516,31 @@ class Task(models.Model):
             
         elif str(self.type.get_type()) == 'craftingtaskdirectory':
           # Check if not all of the required work is finished.          
-            print("Fullfilled {0} of {1}".format(self.get_fulfilled(),
+            logger.info("Task: {0} - Fullfilled {1} of {2}".format(self, self.get_fulfilled(),
                 self.type.craftingtaskdirectory.get_work_units()))
             if self.get_fulfilled() < self.type.craftingtaskdirectory.get_work_units():
-                print("Previous Slaves: {0}".format(previous_slaves))
+                #print("Previous Slaves: {0}".format(previous_slaves))
                 for s in previous_slaves:
-                    print("Reassigning Slave {0} to Task {1}".format(s, self))
+                    logger.info("Task: {0} - Reassigning Slave {1}.".format(self, s))
                     Assignment.objects.assign(task=self, slave=s)
           # Otherwise finish the task
             else:
                 self._retrieved = True
                 self.finish_crafting()
+                
+        elif str(self.type.get_type()) == 'harvestingtaskdirectory':
+          # Check if not all of the required work is finished.          
+            logger.info("Task: {0} - Fullfilled {1} of {2}".format(self, self.get_fulfilled(),
+                self.type.harvestingtaskdirectory.get_work_units()))
+            if self.get_fulfilled() < self.type.harvestingtaskdirectory.get_work_units():
+                #print("Previous Slaves: {0}".format(previous_slaves))
+                for s in previous_slaves:
+                    logger.info("Task: {0} - Reassigning Slave {1}.".format(self, s))
+                    Assignment.objects.assign(task=self, slave=s)
+          # Otherwise finish the task
+            else:
+                self._retrieved = True
+                self.finish_harvesting()
                 
         elif str(self.type.get_type()) == 'buildingtaskdirectory':
           # Check if not all of the required work is finished.  
@@ -536,16 +569,16 @@ class Task(models.Model):
         work_fulfilled = self.get_fulfilled() / base_work
         amount_produced = int(work_fulfilled * self.get_type().get_param('base_yield'))
         
-        print("The task produced {0} work resulting in {1} of {2}".format(work_fulfilled, amount_produced, item_produced))
+        logger.info("Task: {0} - Produced {1} work resulting in {2} of {3}".format(self, work_fulfilled, amount_produced, item_produced))
         
         try:
             Item.objects.put(item=item_produced, location=warehouse, amount=amount_produced)
         except Exception:
-            print("ERROR! Some shit while putting farmed item to warehouse.")
+            logger.info("ERROR! Task: {0} - Some shit while putting crafted item to warehouse.".format(self))
         
     def finish_crafting(self):
         """ Put to warehouse crafted items. """
-        print("FINISH CRAFTING")
+#        print("FINISH CRAFTING")
 #        amount_produced = floor(self.get_fulfilled() // self.get_type().get_param('work_units'))
     # We need to take ingredients in case we have occasionally 
     # produced more then 1 amount. This is not ready, so we fix amount to 1.
@@ -554,13 +587,28 @@ class Task(models.Model):
         work_fulfilled = self.get_fulfilled()
         warehouse = self.get_region().get_locations('hq').first()
         
-        print("The task produced {0} work resulting in {1} of {2}".format(work_fulfilled, amount_produced, item_produced))
+        logger.info("Task: {0} - Produced {1} work resulting in {2} of {3}".format(self, work_fulfilled, amount_produced, item_produced))
     
     # Now put to warehouse
         try:
             Item.objects.put(item=item_produced, location=warehouse, amount=amount_produced)
         except Exception:
-            print("ERROR! Some shit while putting crafted item to warehouse")
+            logger.info("ERROR! Task: {0} - Some shit while putting crafted item to warehouse.".format(self))
+
+    def finish_harvesting(self):
+        """ Put to warehouse harvested items. """
+        work_fulfilled = self.get_fulfilled()
+        amount_produced = floor(work_fulfilled // self.get_type().get_param('work_units'))
+        item_produced = self.get_type().get_param('yield_item')
+        warehouse = self.get_region().get_locations('hq').first()
+        
+        logger.info("Task: {0} - Produced {1} work resulting in {2} of {3}".format(self, work_fulfilled, amount_produced, item_produced))
+    
+    # Now put to warehouse
+        try:
+            Item.objects.put(item=item_produced, location=warehouse, amount=amount_produced)
+        except Exception:
+            logger.info("ERROR! Task: {0} - Some shit while putting crafted item to warehouse.".format(self))
 
     def finish_building(self):
         """ Place new Location. """
@@ -582,12 +630,12 @@ class Task(models.Model):
         number_of_locations = self.get_region().get_locations(design=design).count()
         return "{0} #{1}".format(str(design), str(number_of_locations+1))
     
-    def get_yield_farming(self, strict=False):
+        """def get_yield_farming(self, strict=False):
     # FIXME TO BE REMOVED FROM HERE!
-        """ There can be several primary and secondary skills.
+        "" There can be several primary and secondary skills.
         The functions calculates the part of each one and the total output.
         Primary skill = 50%, Secondary split by number. This results in base_yield.
-        Bonuses may add extra. """
+        Bonuses may add extra. ""
 
         print("Trying to yield from farming task")
         ps = self.get_type().get_primary_skill()
@@ -637,7 +685,7 @@ class Task(models.Model):
         return (self.get_type().farmingtaskdirectory.get_plant().get_yield_item(), cummulative_result)
 
     def get_yield_crafting(self):
-        pass
+        pass """
         
 class Assignment(models.Model):
     """ This class controls assignments of Slaves to Tasks. """

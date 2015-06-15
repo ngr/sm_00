@@ -81,31 +81,33 @@ ATTRIBUTE_CHOICES = (
         (CHR, 'Charisma'),
 )
 
-TASK_TYPES = (
-        ('farming', 'Farming'),
-        ('crafting', 'Crafting'),
-        ('building', 'Building'),
-)
-
-FIXED_TIME_TASK_TYPES = ('farmingtaskdirectory')
-FIXED_WORK_TASK_TYPES = ('craftingtaskdirectory', 'buildingtaskdirectory')
-
 TASK_DIRECTORIES = (
         ('farmingtaskdirectory', 'Farming'),
         ('craftingtaskdirectory', 'Crafting'),
+        ('harvestingtaskdirectory', 'Harvesting'),
         ('buildingtaskdirectory', 'Building'),
 )
 
-LOCATION_TYPES = (
-        ('farmingfield', 'Farming Field'),
-        ('housingdistrict', 'Housing District'),
-        ('workshop', 'Workshop'),
-)
+#TASK_TYPES = (
+#        ('farming', 'Farming'),
+#        ('crafting', 'Crafting'),
+#        ('harvesting', 'Harvesting'),
+#        ('building', 'Building'),
+#)
 
-ITEM_TYPES = (
-        ('fooddirectory', 'Food'),
-        ('materialdirectory', 'Material'),
-)
+#FIXED_TIME_TASK_TYPES = ('farmingtaskdirectory')
+#FIXED_WORK_TASK_TYPES = ('craftingtaskdirectory', 'buildingtaskdirectory')
+
+#LOCATION_TYPES = (
+#        ('farmingfield', 'Farming Field'),
+#        ('housingdistrict', 'Housing District'),
+#        ('workshop', 'Workshop'),
+#)
+
+#ITEM_TYPES = (
+#        ('fooddirectory', 'Food'),
+#        ('materialdirectory', 'Material'),
+#)
 
 
 
