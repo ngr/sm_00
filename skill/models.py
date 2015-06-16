@@ -5,6 +5,9 @@
 # Please never use any of this App methods except from within Slave App.
 # Planned for redesign!
 #####################################
+import logging
+logger = logging.getLogger(__name__)
+
 from django.db import models
 from django.db.models import Q
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -32,7 +35,7 @@ class STManager(models.Manager):
         """ This method assignes the 'skill' to 'slave' with 'exp'
             There are certain checks performed here. If you change test well! """
 
-        print("Setting {0} experience in {1} to {2}". format(slave, skill, exp))
+        logger.debug("Setting {0} experience in {1} to {2}". format(slave, skill, exp))
 
         exp = fit_to_range_int(exp, 0)
 #        print("Fitted exp:", exp)
@@ -42,10 +45,10 @@ class STManager(models.Manager):
         if st:
 #            print("ST record exists. Should try to update.", st)
             if self.__skill_available(slave, skill):
-#                print("Skill available. Updating exp:", exp)
+                logger.debug("Skill available. Updating exp:", exp)
                 st.update(exp=exp)
             else:
-                print("Skill is not available.")
+                logger.debug("Skill is not available.")
         else:
 #            print("No ST record. Creating new one...", st)
             if self.__skill_available(slave, skill):
@@ -53,7 +56,7 @@ class STManager(models.Manager):
                 st = SkillTrained(slave=slave, skill=skill, exp=exp)
                 st.save()
             else:
-                print("Skill is not available")
+                logger.debug("Skill is not available")
 
     def add_exp(self, slave, skill, exp=1):
         """ This is a shortcut to increase skill experience """
@@ -75,7 +78,7 @@ class STManager(models.Manager):
         refresh = False
         for s in r:
             if self.get_skill_level(slave, s) == 0:
-                print("New skill available!", s)
+                logger.info("Slave: {0} - New skill available: {1}".format(slave, s))
                 self.add_exp(slave, s)
                 refresh = True
     # SkillTrained objects have been updated need to refresh result!
@@ -83,20 +86,15 @@ class STManager(models.Manager):
             r = Skill.objects.filter(Q(required_skills__in=Skill.objects.filter(skilltrained__slave=slave,skilltrained__exp__gte=MIN_EXP_FOR_CHILD_SKILLS))|Q(required_skills__isnull=True)).order_by('difficulty').order_by('required_skills', 'difficulty')
         return r
 
-
     def get_slave_skills(self, slave):
         """ Brand new function to return skills with exp """
         return SkillTrained.objects.filter(skill__in=Skill.objects.filter(Q(required_skills__in=Skill.objects.filter(skilltrained__slave=slave,skilltrained__exp__gte=MIN_EXP_FOR_CHILD_SKILLS))|Q(required_skills__isnull=True)).order_by('difficulty').order_by('required_skills', 'difficulty'), slave=slave)
-
-
-
 
     def get_skill_level(self, slave, skill):
         """ Returns the current skill level of slave """
         if isinstance(skill, Skill):
             st = SkillTrained.objects.filter(slave=slave, skill=skill)
         elif isinstance(skill, str):
-#            print("Looking for string")
             st = SkillTrained.objects.filter(slave=slave, skill__name=skill)
 
         return exp_to_lev(st.get().exp) if st else 0
@@ -109,7 +107,7 @@ class STManager(models.Manager):
 
         skl = 0.99 if (skl/100.0 + bonus) >= 1 else skl/100.0 + bonus
         skl = 0 if skl < 0 else skl
-        print("Skill level with bonus:", skl)
+        logger.debug("Skill level with bonus:", skl)
 
         return random() < skl
 
@@ -120,7 +118,7 @@ class STManager(models.Manager):
         if req:
             return True # This happens with "base" skills.
 
-        print("Slave has required skill with exp:",\
+        logger.debug("Slave has required skill with exp:",\
                 SkillTrained.objects.filter(slave=slave, skill=req.get()).get().exp)
 
         return True if exp_to_lev(SkillTrained.objects.filter(slave=slave, skill=req.get()).get().exp)\

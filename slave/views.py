@@ -56,7 +56,7 @@ class API_SlaveList(generics.ListAPIView):
 
     # Order By
         # Should one day get the ordering from request.
-        slave_list = slave_list.order_by('location', 'date_birth')
+        slave_list = slave_list.order_by('region', 'date_birth')
         
     # Paginate
         # FIXME The build in "LimitOffsetPagination" didn't work

@@ -106,6 +106,7 @@ class SlaveManager(models.Manager):
                     ps.parent.add(p)
 
         logger.info("User: {0} - A new slave was spawned: {1}".format(larva.owner, larva))
+        larva.get_available_skills()
         return larva
 
     def __generate_name(self, sex, race):
