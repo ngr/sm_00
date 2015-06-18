@@ -116,15 +116,28 @@ class API_TaskList(generics.ListCreateAPIView):
     def post(self, request):
         """ Create a new task. """
 
-    # Authorize current user for requested Task.
-        print("data: {0},  request: {1}".format(request.data, request.user.id))
-        if int(request.data.get('owner')) != request.user.id:
+    # Authorize current user for requested Location.
+        if not isinstance(request.data.get('location'), int) and not request.data.get('location').isnumeric():
+            return Response("Location should be numeric ID.",
+                        status=status.HTTP_400_BAD_REQUEST)
+        # Get the actual Location instance
+        q_location = request.data.get('location')
+        try:
+            q_location_instance = Location.objects.get(pk=q_location)
+        except:
+            return Response("Authorization error for this task.",
+                status=status.HTTP_403_FORBIDDEN)
+        # Check that the user is authorized for this Location.
+        if not q_location_instance.get_owner() == self.request.user:
             return Response("Authorization error for this task.",
                 status=status.HTTP_403_FORBIDDEN)
 
+    # Push owner to serialized data as Task object needs it.
+        new_task_data = request.data
+        new_task_data['owner'] = self.request.user.id
     # Serialize incoming data as a new Task.
     # Important to use this one, as validators are in Detailed serializer only.
-        serializer = TaskDetailSerializer(data=request.data)
+        serializer = TaskDetailSerializer(data=new_task_data)
 
     # Validate data
         # Gameplay rules and more security issues 

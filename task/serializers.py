@@ -155,6 +155,7 @@ class TaskSerializer(serializers.ModelSerializer):
     
     def  validate(self, data):
         """ A little gameplay logic validation. """
+    # FIXME! Move this AWAY from serializer to Controller!!!
     # Verify sufficient materials.
         # print(data)
         # A little sleepy now to use cooler search in ordered dictionary
@@ -216,9 +217,10 @@ class TaskDetailSerializer(TaskSerializer):
 #        print(task_type)
 
     # Authorize location.
-        if not location.get_owner().id == int(self.initial_data.get('owner')):
+    # This validation moved to VIEW class as we do not longer pass owner manually.
+        #if not location.get_owner().id == int(self.initial_data.get('owner')):
             #print("Location owner: {0}, you are: {1}".format(location.get_owner(), self.initial_data.get('owner')))
-            raise serializers.ValidationError("You are not authorized for this location.")
+            #raise serializers.ValidationError("You are not authorized for this location.")
     
     # Verify location type.
         if not location.get_type() == task_type.get_location_type():
