@@ -15,7 +15,7 @@ from slave.logic import AssignmentError, TaskError
 from task.serializers import TaskSerializer, TaskDetailSerializer,\
     AssignmentSerializer, TaskDirectorySerializer
 from task.models import Task, Assignment, TaskDirectory
-from area.models import Region, LocationType
+from area.models import Region, Location, LocationType
 from slave.models import Slave
 
 class API_TaskList(generics.ListCreateAPIView):
@@ -361,6 +361,24 @@ class API_TaskWorkflowList(generics.ListAPIView):
             if not q_location.isnumeric():
                 q_location = LocationType.objects.filter(name__exact=q_location.title()).first()
             task_workflow_list = task_workflow_list.filter(location_type=q_location)
-
-        return task_workflow_list
     
+    # Filter workflows valid for specific Location.
+        if 'location' in self.request.query_params:
+            q_location = self.request.query_params.get('location')
+            # Check that location ID is requested.
+            if not q_location.isnumeric():
+                print("Error. Requested Location should be integer ID.")
+                return []
+            # Get the actual Location instance in order to analyse it's type
+            try:
+                q_location_instance = Location.objects.get(pk=q_location)
+            except:
+                print("Authorization error for this Location.")
+                return []
+            # Check that the user is authorized for this Location.
+            if not q_location_instance.get_owner() == self.request.user:
+                print("Authorization error for this Location.")
+                return []
+            # Do the actual filter of workflows.
+            task_workflow_list = task_workflow_list.filter(location_type=q_location_instance.get_type())
+        return task_workflow_list
